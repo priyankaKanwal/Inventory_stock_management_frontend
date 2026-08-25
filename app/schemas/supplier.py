@@ -1,25 +1,52 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
-class SupplierBase(BaseModel):
+class SupplierCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+
+    contact_email: EmailStr
+
+    phone: str | None = Field(
+        default=None,
+        max_length=15
+    )
+
+    address: str | None = Field(
+        default=None,
+        max_length=255
+    )
+
+
+class SupplierUpdate(BaseModel):
+    name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100
+    )
+
+    contact_email: EmailStr | None = None
+
+    phone: str | None = Field(
+        default=None,
+        max_length=15
+    )
+
+    address: str | None = Field(
+        default=None,
+        max_length=255
+    )
+
+
+class SupplierResponse(BaseModel):
+    id: int
     name: str
     contact_email: EmailStr
-    phone: str | None = None
-    address: str | None = None
-
-
-class SupplierCreate(SupplierBase):
-    pass
-
-
-class SupplierUpdate(SupplierBase):
-    pass
-
-
-class SupplierResponse(SupplierBase):
-    id: int
+    phone: str | None
+    address: str | None
     created_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True
+    )

@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
@@ -9,11 +9,39 @@ from app.core.database import Base
 class Supplier(Base):
     __tablename__ = "suppliers"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
-    contact_email = Column(String(100), nullable=False)
-    phone = Column(String(15), nullable=True)
-    address = Column(String(255), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
-    products = relationship("Product", back_populates="supplier")
+    name: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False
+    )
+
+    contact_email: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False
+    )
+
+    phone: Mapped[str | None] = mapped_column(
+        String(15),
+        nullable=True
+    )
+
+    address: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    products = relationship(
+        "Product",
+        back_populates="supplier"
+    )

@@ -1,15 +1,14 @@
 from datetime import datetime
 
 from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    Numeric,
     Boolean,
     DateTime,
     ForeignKey,
+    Integer,
+    Numeric,
+    String,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
@@ -17,34 +16,75 @@ from app.core.database import Base
 class Product(Base):
     __tablename__ = "products"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
-    sku = Column(String(30), unique=True, nullable=False)
-
-    category_id = Column(
+    id: Mapped[int] = mapped_column(
         Integer,
+        primary_key=True,
+        index=True
+    )
+
+    name: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False
+    )
+
+    sku: Mapped[str] = mapped_column(
+        String(30),
+        unique=True,
+        nullable=False
+    )
+
+    category_id: Mapped[int] = mapped_column(
         ForeignKey("categories.id"),
         nullable=False
     )
 
-    supplier_id = Column(
-        Integer,
+    supplier_id: Mapped[int] = mapped_column(
         ForeignKey("suppliers.id"),
         nullable=False
     )
 
-    unit_price = Column(Numeric(10, 2), nullable=False)
-    quantity_in_stock = Column(Integer, nullable=False, default=0)
-    reorder_level = Column(Integer, nullable=False, default=10)
-
-    is_active = Column(Boolean, default=True)
-
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
+    unit_price: Mapped[float] = mapped_column(
+        Numeric(10, 2),
+        nullable=False
     )
 
-    category = relationship("Category", back_populates="products")
-    supplier = relationship("Supplier", back_populates="products")
+    quantity_in_stock: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    reorder_level: Mapped[int] = mapped_column(
+        Integer,
+        default=10,
+        nullable=False
+    )
+
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    category = relationship(
+        "Category",
+        back_populates="products"
+    )
+
+    supplier = relationship(
+        "Supplier",
+        back_populates="products"
+    )
