@@ -18,8 +18,7 @@ class ProductCreate(BaseModel):
     sku: str = Field(
         ...,
         min_length=1,
-        max_length=30
-    )
+        max_length=30)
 
     category_id: int = Field(..., gt=0)
 
@@ -29,52 +28,43 @@ class ProductCreate(BaseModel):
 
     quantity_in_stock: int = Field(
         default=0,
-        ge=0
-    )
+        ge=0)
 
     reorder_level: int = Field(
         default=10,
-        ge=0
-    )
+        ge=0)
 
 
 class ProductUpdate(BaseModel):
     name: str | None = Field(
         default=None,
         min_length=1,
-        max_length=100
-    )
+        max_length=100)
 
     sku: str | None = Field(
         default=None,
         min_length=1,
-        max_length=30
-    )
+        max_length=30)
 
     category_id: int | None = Field(
         default=None,
-        gt=0
-    )
+        gt=0)
 
     supplier_id: int | None = Field(
         default=None,
-        gt=0
-    )
+        gt=0)
 
     unit_price: Decimal | None = Field(
         default=None,
-        gt=0
-    )
+        gt=0)
 
     quantity_in_stock: int | None = Field(
         default=None,
-        ge=0
-    )
+        ge=0)
 
     reorder_level: int | None = Field(
         default=None,
-        ge=0
-    )
+        ge=0)
 
 
 class StockAdjustment(BaseModel):
@@ -82,8 +72,7 @@ class StockAdjustment(BaseModel):
     reason: str = Field(
         ...,
         min_length=1,
-        max_length=255
-    )
+        max_length=255)
 
 
 class ProductResponse(BaseModel):
@@ -105,8 +94,7 @@ class ProductResponse(BaseModel):
     stock_status: StockStatus
 
     model_config = ConfigDict(
-        from_attributes=True
-    )
+        from_attributes=True)
 
 
 class ProductListResponse(BaseModel):
@@ -122,4 +110,3 @@ class ProductSummaryResponse(BaseModel):
     total_stock_value: Decimal
     low_stock_count: int
     out_of_stock_count: int
-    

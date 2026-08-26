@@ -21,8 +21,7 @@ from app.utils.exceptions import (
 
 def calculate_stock_status(
     quantity: int,
-    reorder_level: int
-):
+    reorder_level: int):
     if quantity == 0:
         return "out of stock"
 

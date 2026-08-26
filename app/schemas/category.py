@@ -7,21 +7,18 @@ class CategoryCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=50)
     description: str | None = Field(
         default=None,
-        max_length=255
-    )
+        max_length=255)
 
 
 class CategoryUpdate(BaseModel):
     name: str | None = Field(
         default=None,
         min_length=1,
-        max_length=50
-    )
+        max_length=50)
 
     description: str | None = Field(
         default=None,
-        max_length=255
-    )
+        max_length=255)
 
 
 class CategoryResponse(BaseModel):
@@ -31,5 +28,4 @@ class CategoryResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(
-        from_attributes=True
-    )
+        from_attributes=True)

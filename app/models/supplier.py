@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime,timezone
 
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -8,6 +8,7 @@ from app.core.database import Base
 
 class Supplier(Base):
     __tablename__ = "suppliers"
+    
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -37,7 +38,7 @@ class Supplier(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False
     )
 

@@ -10,33 +10,28 @@ class SupplierCreate(BaseModel):
 
     phone: str | None = Field(
         default=None,
-        max_length=15
-    )
+        max_length=15)
 
     address: str | None = Field(
         default=None,
-        max_length=255
-    )
+        max_length=255)
 
 
 class SupplierUpdate(BaseModel):
     name: str | None = Field(
         default=None,
         min_length=1,
-        max_length=100
-    )
+        max_length=100)
 
     contact_email: EmailStr | None = None
 
     phone: str | None = Field(
         default=None,
-        max_length=15
-    )
+        max_length=15)
 
     address: str | None = Field(
         default=None,
-        max_length=255
-    )
+        max_length=255)
 
 
 class SupplierResponse(BaseModel):
@@ -48,5 +43,4 @@ class SupplierResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(
-        from_attributes=True
-    )
+        from_attributes=True)
