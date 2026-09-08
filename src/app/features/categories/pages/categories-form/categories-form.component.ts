@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   FormBuilder,
   FormGroup,
@@ -23,6 +24,8 @@ export class CategoriesFormComponent implements OnInit {
 
   isEditMode = false;
   categoryId: number | null = null;
+  errorMessage = '';
+  isLoading = false;
 
   constructor(
     private fb: FormBuilder,
@@ -47,37 +50,43 @@ export class CategoriesFormComponent implements OnInit {
 
   ngOnInit(): void {
 
-    // Get category ID from URL
-    const id = this.route.snapshot.paramMap.get('id');
+    // Check whether we are editing a category
+    this.checkEditMode();
 
-    if (id) {
-      this.categoryId = Number(id);
-      this.isEditMode = true;
+  }
+
+  checkEditMode(): void {
+
+    const idParam = this.route.snapshot.paramMap.get('id');
+
+    if (!idParam) {
+      return;
     }
 
-    // Load category when editing
-    if (this.isEditMode && this.categoryId) {
+    this.isEditMode = true;
+    this.categoryId = Number(idParam);
 
-      this.categoryService
-        .getCategoryById(this.categoryId)
-        .subscribe({
+    this.categoryService.getCategoryById(this.categoryId).subscribe({
 
-          next: (category: Category) => {
+      next: (category: Category) => {
 
-            // Put existing category data into the form
-            this.categoryForm.patchValue({
-              name: category.name,
-              description: category.description
-            });
-
-          },
-
-          error: (error) => {
-            console.error('Error loading category:', error);
-          }
-
+        this.categoryForm.patchValue({
+          name: category.name,
+          description: category.description
         });
-    }
+
+      },
+
+      error: (error: HttpErrorResponse) => {
+
+        console.error('Error loading category:', error);
+
+        this.errorMessage = 'Could not load category.';
+
+      }
+
+    });
+
   }
 
   // Create data to send to API
@@ -85,12 +94,11 @@ export class CategoriesFormComponent implements OnInit {
 
     const formValue = this.categoryForm.value;
 
-    const payload = {
+    return {
       name: formValue.name,
       description: formValue.description
     };
 
-    return payload;
   }
 
   onSubmit(): void {
@@ -103,8 +111,10 @@ export class CategoriesFormComponent implements OnInit {
       return;
     }
 
-    // Get data to send to API
     const payload = this.buildPayload();
+
+    this.errorMessage = '';
+    this.isLoading = true;
 
     // Update category
     if (this.isEditMode && this.categoryId) {
@@ -115,18 +125,23 @@ export class CategoriesFormComponent implements OnInit {
 
           next: () => {
 
-            // Reset form
-            this.categoryForm.reset({
-              name: '',
-              description: ''
-            });
+            this.isLoading = false;
 
-            // Go to category list
             this.router.navigate(['/categories']);
+
           },
 
-          error: (error) => {
+          error: (error: HttpErrorResponse) => {
+
+            this.isLoading = false;
+
             console.error('Error updating category:', error);
+
+            this.errorMessage =
+              error.status === 409
+                ? 'A category with this name already exists.'
+                : 'Unable to update the category. Please try again.';
+
           }
 
         });
@@ -141,21 +156,27 @@ export class CategoriesFormComponent implements OnInit {
 
         next: () => {
 
-          // Reset form
-          this.categoryForm.reset({
-            name: '',
-            description: ''
-          });
+          this.isLoading = false;
 
-          // Go to category list
           this.router.navigate(['/categories']);
+
         },
 
-        error: (error) => {
+        error: (error: HttpErrorResponse) => {
+
+          this.isLoading = false;
+
           console.error('Error adding category:', error);
+
+          this.errorMessage =
+            error.status === 409
+              ? 'A category with this name already exists.'
+              : 'Unable to add the category. Please try again.';
+
         }
 
       });
+
   }
 
   // Go back to category list
@@ -167,5 +188,7 @@ export class CategoriesFormComponent implements OnInit {
     });
 
     this.router.navigate(['/categories']);
+
   }
+
 }

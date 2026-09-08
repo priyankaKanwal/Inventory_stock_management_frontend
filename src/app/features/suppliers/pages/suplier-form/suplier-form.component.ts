@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SupplierService } from '../../../../services/supplier.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-suplier-form',
@@ -14,6 +15,8 @@ export class SuplierFormComponent implements OnInit {
 
   isEditMode = false;
   supplierId: number | null = null;
+  errorMessage = '';
+  isLoading = false;
 
   constructor(
     private fb: FormBuilder,
@@ -33,33 +36,46 @@ export class SuplierFormComponent implements OnInit {
   ngOnInit(): void {
 
     // Get supplier ID from URL
-    const id = this.route.snapshot.paramMap.get('id');
-
-    if (id) {
-      this.supplierId = Number(id);
-      this.isEditMode = true;
-    }
-
-    // Load supplier when editing
-    if (this.isEditMode && this.supplierId) {
-
-      this.supplierService.getSupplierById(this.supplierId).subscribe({
-        next: (supplier) => {
-
-          this.supplierForm.patchValue({
-            name: supplier.name,
-            contact_email: supplier.contact_email,
-            phone: supplier.phone,
-            address: supplier.address
-          });
-
-        },
-        error: (error) => {
-          console.error('Error loading supplier:', error);
-        }
-      });
-    }
+    this.checkEditMode();
   }
+
+  checkEditMode(): void {
+
+    const idParam = this.route.snapshot.paramMap.get('id');
+
+    if (!idParam) {
+      return;
+    }
+
+    this.isEditMode = true;
+    this.supplierId = Number(idParam);
+
+    this.supplierService.getSupplierById(this.supplierId).subscribe({
+
+      next: (supplier) => {
+
+        this.supplierForm.patchValue({
+          name: supplier.name,
+          contact_email: supplier.contact_email,
+          phone: supplier.phone,
+          address: supplier.address
+        });
+
+      },
+
+      error: (error: HttpErrorResponse) => {
+
+        console.error('Error loading supplier:', error);
+
+        this.errorMessage = 'Could not load supplier.';
+
+      }
+
+    });
+
+  }
+
+
 
   onSubmit(): void {
 
@@ -80,6 +96,9 @@ export class SuplierFormComponent implements OnInit {
       address: formValue.address
     };
 
+    this.errorMessage = '';
+    this.isLoading = true;
+
     // Update supplier
     if (this.isEditMode && this.supplierId) {
 
@@ -87,10 +106,16 @@ export class SuplierFormComponent implements OnInit {
         .updateSupplier(this.supplierId, payload)
         .subscribe({
           next: () => {
+            this.isLoading = false;
             this.router.navigate(['/suppliers']);
           },
           error: (error) => {
+            this.isLoading = false;
             console.error('Error updating supplier:', error);
+            this.errorMessage =
+              error.status === 409
+                ? 'A supplier with this name already exists.'
+                : 'Unable to update the supplier. Please try again.';
           }
         });
 
@@ -100,10 +125,16 @@ export class SuplierFormComponent implements OnInit {
     // Add supplier
     this.supplierService.addSupplier(payload).subscribe({
       next: () => {
+        this.isLoading = false;
         this.router.navigate(['/suppliers']);
       },
       error: (error) => {
+        this.isLoading = false;
         console.error('Error adding supplier:', error);
+        this.errorMessage =
+          error.status === 409
+            ? 'A supplier with this name already exists.'
+            : 'Unable to add the supplier. Please try again.';
       }
     });
   }

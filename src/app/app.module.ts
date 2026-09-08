@@ -1,18 +1,26 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 
 import { AppComponent } from './app.component';
 import { routes } from './app.routes';
+import { AuthInterceptor } from './auth/interceptors/auth.interceptor';
 
 @NgModule({
   declarations: [AppComponent],
+  //tells i need functionality provided by these modules
   imports: [
     BrowserModule,
-    HttpClientModule,
     RouterModule.forRoot(routes)
-],
+  ],
+  providers: [
+    provideHttpClient(
+      withInterceptors([AuthInterceptor])
+    )
+  ],
+
+  //tells angular this is the first component to load when the application starts
   bootstrap: [AppComponent]
 })
 export class AppModule {

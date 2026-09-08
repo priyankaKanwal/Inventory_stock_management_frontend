@@ -5,19 +5,40 @@ import { RouterModule, Routes } from '@angular/router';
 import { SuppliersComponent } from './suppliers.component';
 import { SuplierFormComponent } from './pages/suplier-form/suplier-form.component';
 
+import { roleGuard } from '../../auth/guards/role.guard';
+
 const routes: Routes = [
+
+  // Suppliers List
   {
     path: '',
-    component: SuppliersComponent
+    component: SuppliersComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMIN', 'STAFF']
+    }
   },
+
+  // Add Supplier
   {
     path: 'add',
-    component: SuplierFormComponent
+    component: SuplierFormComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMIN']
+    }
   },
+
+  // Edit Supplier
   {
     path: 'edit/:id',
-    component: SuplierFormComponent
+    component: SuplierFormComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMIN']
+    }
   }
+
 ];
 
 @NgModule({
@@ -27,4 +48,4 @@ const routes: Routes = [
     RouterModule.forChild(routes)
   ]
 })
-export class SuppliersRoutingModule { }
+export class SuppliersRoutingModule {}

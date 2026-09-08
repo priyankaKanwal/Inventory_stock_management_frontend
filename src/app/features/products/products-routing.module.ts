@@ -1,26 +1,45 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
+
 import { ProductsComponent } from './products.component';
 import { ProductsFormComponent } from './pages/products-form/products-form.component';
 
-
+import { roleGuard } from '../../auth/guards/role.guard';
 
 const routes: Routes = [
-  { path: '',
-    component: ProductsComponent
+
+  // Products List
+  {
+    path: '',
+    component: ProductsComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMIN', 'STAFF']
+    }
   },
 
-  { path: 'add', 
-    component: ProductsFormComponent 
+  // Add Product
+  {
+    path: 'add',
+    component: ProductsFormComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMIN']
+    }
   },
 
-  { path: 'edit/:id', 
-    component: ProductsFormComponent 
+  // Edit Product
+  {
+    path: 'edit/:id',
+    component: ProductsFormComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMIN']
+    }
   }
+
 ];
-
-
 
 @NgModule({
   declarations: [],
@@ -29,4 +48,4 @@ const routes: Routes = [
     RouterModule.forChild(routes)
   ]
 })
-export class ProductsRoutingModule { }
+export class ProductsRoutingModule {}

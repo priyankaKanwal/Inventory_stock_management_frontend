@@ -3,22 +3,42 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
 
 import { CategoriesComponent } from './categories.component';
-import { CategoriesListComponent } from './pages/categories-list/categories-list.component';
 import { CategoriesFormComponent } from './pages/categories-form/categories-form.component';
 
+import { roleGuard } from '../../auth/guards/role.guard';
+
 const routes: Routes = [
+
+  // Categories List
   {
     path: '',
-    component: CategoriesComponent
+    component: CategoriesComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMIN', 'STAFF']
+    }
   },
+
+  // Add Category
   {
     path: 'add',
-    component: CategoriesFormComponent
+    component: CategoriesFormComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMIN']
+    }
   },
+
+  // Edit Category
   {
     path: 'edit/:id',
-    component: CategoriesFormComponent
+    component: CategoriesFormComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMIN']
+    }
   }
+
 ];
 
 @NgModule({
@@ -28,4 +48,4 @@ const routes: Routes = [
     RouterModule.forChild(routes)
   ]
 })
-export class CategoriesRoutingModule { }
+export class CategoriesRoutingModule {}
