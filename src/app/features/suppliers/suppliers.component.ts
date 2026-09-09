@@ -23,6 +23,10 @@ export class SuppliersComponent implements OnInit {
   //array to hold suppliers
   suppliers: Supplier[] = [];
 
+  // Whether current user is an admin (full CRUD access)
+  isAdmin =
+    localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
+
   constructor(private supplierService: SupplierService) {}
 
   ngOnInit(): void {

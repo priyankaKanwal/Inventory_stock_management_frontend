@@ -17,6 +17,10 @@ export class CategoriesComponent implements OnInit {
 
   categories: Category[] = [];
 
+  // Whether current user is an admin (full CRUD access)
+  isAdmin =
+    localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
+
   constructor(
     private categoryService: CategoryService
   ) {}

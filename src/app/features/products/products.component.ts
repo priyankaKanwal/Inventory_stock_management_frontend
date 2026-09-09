@@ -44,6 +44,10 @@ export class ProductsComponent implements OnInit, OnDestroy {
   // Store subscription so we can unsubscribe later
   private productSubscription?: Subscription;
 
+  // Whether current user is an admin (full CRUD access)
+  isAdmin =
+    localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
+
 
   constructor(
     private productService: ProductService

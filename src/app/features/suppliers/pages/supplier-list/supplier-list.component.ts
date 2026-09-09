@@ -13,6 +13,10 @@ export class SupplierListComponent implements OnInit, OnDestroy {
   // Suppliers received from parent component
   @Input() suppliers: Supplier[] = [];
 
+  // Whether current user is an admin (full CRUD access)
+  isAdmin =
+    localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
+
   // Search values
   searchQuery = '';
   showSuggestions = false;

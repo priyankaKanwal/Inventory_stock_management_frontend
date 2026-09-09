@@ -33,6 +33,10 @@ export class ProductsListComponent implements OnInit {
   // Products received from ProductsComponent
   @Input() products: Product[] = [];
 
+  // Whether current user is an admin (full CRUD access)
+  isAdmin =
+    localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
+
   // Search / Filter
   selectedStatus = 'All Status';
 
