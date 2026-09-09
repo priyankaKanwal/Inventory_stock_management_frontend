@@ -1,26 +1,11 @@
-import {
-  Component,
-  Input,
-  OnInit
-} from '@angular/core';
-
+import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-
 import { CategoryService } from '../../../../services/category.service';
 import { SupplierService } from '../../../../services/supplier.service';
 import { ProductService } from '../../../../services/product.service';
-
-import {
-  Product
-} from '../../products.component';
-
-import {
-  Category
-} from '../../../categories/categories.component';
-
-import {
-  Supplier
-} from '../../../suppliers/suppliers.component';
+import { Product } from '../../products.component';
+import { Category } from '../../../categories/categories.component';
+import { Supplier } from '../../../suppliers/suppliers.component';
 
 
 @Component({
@@ -28,7 +13,14 @@ import {
   templateUrl: './products-list.component.html',
   styleUrl: './products-list.component.css'
 })
+
 export class ProductsListComponent implements OnInit {
+  nextPage() {
+    throw new Error('Method not implemented.');
+  }
+  previousPage() {
+    throw new Error('Method not implemented.');
+  }
 
   // Products received from ProductsComponent
   @Input() products: Product[] = [];
@@ -46,12 +38,18 @@ export class ProductsListComponent implements OnInit {
 
   selectedSuggestionIndex = -1;
 
- // Category / Supplier name maps
+  // Category / Supplier name maps
   private categoryNames =
     new Map<number, string>();
 
   private supplierNames =
     new Map<number, string>();
+
+  // Pagination variables
+  currentPage: number = 1;
+  pageSize: number = 10;
+  total: number = 0;
+  totalPages: number = 0;
 
 
   constructor(
@@ -59,7 +57,7 @@ export class ProductsListComponent implements OnInit {
     private supplierService: SupplierService,
     private productService: ProductService,
     private route: ActivatedRoute
-  ) {}
+  ) { }
 
 
   ngOnInit(): void {
@@ -72,7 +70,7 @@ export class ProductsListComponent implements OnInit {
 
     });
 
-     // Get categories
+    // Get categories
     this.categoryService
       .getCategories()
       .subscribe({
@@ -276,7 +274,7 @@ export class ProductsListComponent implements OnInit {
   }
 
 
- // Normalize stock status from API (e.g. 'in stock') to title case
+  // Normalize stock status from API (e.g. 'in stock') to title case
   getStatusLabel(
     status: string
   ): string {
@@ -300,7 +298,7 @@ export class ProductsListComponent implements OnInit {
   }
 
 
- //get supplier name
+  //get supplier name
   getSupplierName(
     product: Product
   ): string {
@@ -375,7 +373,7 @@ export class ProductsListComponent implements OnInit {
     }
 
 
-   
+
     //arrow up
     else if (
       event.key === 'ArrowUp'
@@ -410,7 +408,7 @@ export class ProductsListComponent implements OnInit {
 
       this.selectSuggestion(
         list[
-          this.selectedSuggestionIndex
+        this.selectedSuggestionIndex
         ]
       );
 
@@ -419,12 +417,12 @@ export class ProductsListComponent implements OnInit {
   }
 
 
-  
+
   //status filter change
 
-onStatusChange(status: string): void {
-  this.selectedStatus = status;
-}
+  onStatusChange(status: string): void {
+    this.selectedStatus = status;
+  }
 
   //delete product
   deleteProduct(

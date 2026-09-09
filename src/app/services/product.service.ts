@@ -17,9 +17,9 @@ export class ProductService extends ApiService {
 
 
   // GET - Get all products
-  getProducts(): Observable<ProductsResponse> {
+  getProducts(page: number, pageSize: number): Observable<ProductsResponse> {
     return this.http.get<ProductsResponse>(
-      this.buildUrl('products/')
+      this.buildUrl(`products/?page=${page}&page_size=${pageSize}`)
     );
   }
 

@@ -172,20 +172,30 @@
 
   </div>
 
-  <!-- Footer -->
+  <!-- Pagination -->
 
-  <div class="border-t border-slate-200 px-4 py-2">
+  <div class="flex items-center justify-between mt-4">
 
-    <div class="flex items-center justify-between text-sm text-slate-500">
+  <button
+    type="button"
+    (click)="previousPage()"
+    [disabled]="currentPage === 1"
+    class="rounded-lg border px-4 py-2">
+    Previous
+  </button>
 
-      <span>
-        Showing {{ filteredProducts.length }}
-        of {{ products.length }} products
-      </span>
+  <span>
+    Page {{ currentPage }} of {{ totalPages }}
+  </span>
 
+  <button
+    type="button"
+    (click)="nextPage()"
+    [disabled]="currentPage === totalPages"
+    class="rounded-lg border px-4 py-2">
+    Next
+  </button>
 
-    </div>
-
-  </div>
+</div>
 
 </section>

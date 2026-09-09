@@ -28,6 +28,10 @@ export interface Product {
 export interface ProductsResponse {
   stock_status: string;
   items: Product[];
+  page: number;
+  page_Size: number;
+  total: number;
+  total_pages: number;
 }
 
 
@@ -37,6 +41,13 @@ export interface ProductsResponse {
   styleUrl: './products.component.css'
 })
 export class ProductsComponent implements OnInit, OnDestroy {
+
+  // Pagination properties
+  currentPage = 1;
+  pageSize = 10;
+
+  total = 0;
+  totalPages = 0;
 
   // Store products received from backend
   products: Product[] = [];
@@ -51,7 +62,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
   constructor(
     private productService: ProductService
-  ) {}
+  ) { }
 
 
   // Component initialization
@@ -64,13 +75,21 @@ export class ProductsComponent implements OnInit, OnDestroy {
   getProducts(): void {
 
     this.productSubscription = this.productService
-      .getProducts()
+      .getProducts(this.currentPage, this.pageSize)
       .subscribe({
 
         // API success
         next: (response: ProductsResponse) => {
 
           this.products = response.items;
+
+          this.currentPage = response.page;
+
+          this.pageSize = response.page_Size;
+
+          this.total = response.total;
+
+          this.totalPages = response.total_pages;
 
           console.log('Products:', this.products);
         },
@@ -84,8 +103,37 @@ export class ProductsComponent implements OnInit, OnDestroy {
   }
 
 
+  //next page
+
+  nextPage(): void {
+
+    if (this.currentPage < this.totalPages) {
+
+      this.currentPage++;
+
+      this.getProducts();
+
+    }
+
+  }
+
+  //previous page
+
+  previousPage(): void {
+
+    if (this.currentPage > 1) {
+
+      this.currentPage--;
+
+      this.getProducts();
+
+    }
+
+  }
+
+
   // Count products by stock status
-countByStatus(status: string): number {
+  countByStatus(status: string): number {
 
     const statusLower = status.toLowerCase();
 
