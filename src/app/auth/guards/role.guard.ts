@@ -1,27 +1,46 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
-
 
 export const roleGuard: CanActivateFn = (route) => {
 
-  const authService = inject<AuthService>(AuthService);
   const router = inject(Router);
 
-  const userRole = authService.getRole();
+  // Get user's role
+  const userRole = localStorage.getItem('role');
 
-  const allowedRoles = (route.data['roles'] as string[]).map(role => role.toUpperCase());
+  // Get roles allowed for this route
+  const allowedRoles =
+    (route.data['roles'] as string[] || [])
+      .map(role => role.toUpperCase());
 
+  console.log(
+    'ROLE GUARD - User role:',
+    userRole
+  );
+
+  console.log(
+    'ROLE GUARD - Allowed roles:',
+    allowedRoles
+  );
+
+  // Check permission
   if (
     userRole &&
     allowedRoles.includes(userRole.toUpperCase())
   ) {
 
-    return true;
+    console.log(
+      'ROLE GUARD - Access allowed'
+    );
 
+    return true;
   }
 
-  router.navigate(['/dashboard']);
+  console.log(
+    'ROLE GUARD - Access denied'
+  );
 
-  return false;
+  // Don't redirect to /dashboard here.
+  // That could create a redirect loop.
+  return router.createUrlTree(['/login']);
 };

@@ -1,114 +1,90 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+
 import { AuthService } from '../../../services/auth.service';
 
+interface LoginRequest {
+  email: string;
+  password: string;
+}
 
 @Component({
   selector: 'app-login',
-  templateUrl: './login.component.html',
-  styleUrl: './login.component.css'
+  templateUrl: './login.component.html'
 })
 export class LoginComponent {
 
   email = '';
   password = '';
-  loginForm: FormGroup;
 
   errorMessage = '';
   isLoading = false;
 
   constructor(
-    private fb: FormBuilder,
     private authService: AuthService,
     private router: Router
-  ) {
-
-    this.loginForm = this.fb.group({
-
-      email: [
-        '',
-        [
-          Validators.required,
-          Validators.email
-        ]
-      ],
-
-      password: [
-        '',
-        [
-          Validators.required
-        ]
-      ]
-
-    });
-
-  }
+  ) {}
 
   onSubmit(): void {
 
-    if (this.loginForm.invalid) {
+    this.errorMessage = '';
 
-      this.loginForm.markAllAsTouched();
-
+    if (!this.email || !this.password) {
+      this.errorMessage = 'Email and password are required.';
       return;
     }
 
     this.isLoading = true;
-    this.errorMessage = '';
 
-    const email = this.loginForm.value.email;
-    const password = this.loginForm.value.password;
+    const loginData: LoginRequest = {
+      email: this.email.trim().toLowerCase(),
+      password: this.password
+    };
 
-    this.authService.login(email, password).subscribe({
+    this.authService.login(loginData).subscribe({
 
-      next: () => {
+      next: (response) => {
 
+        // Save token
+        localStorage.setItem(
+          'access_token',
+          response.access_token
+        );
+
+        // Get role from JWT
+        const payload = JSON.parse(
+          atob(response.access_token.split('.')[1])
+        );
+
+        // Save role
+        localStorage.setItem(
+          'role',
+          payload.role.toUpperCase()
+        );
+
+        // Login successful
         this.isLoading = false;
 
-        // Redirect according to role
-        const role = (this.authService.getRole() || '').toUpperCase();
-
-        if (role === 'ADMIN' || role === 'STAFF') {
-
-          this.router.navigate(['/dashboard']);
-
-        }
-        else {
-
-          this.errorMessage = 'Invalid user role';
-
-        }
-
+        // Go to dashboard
+        this.router.navigate(['/dashboard']);
       },
 
       error: (error) => {
 
-        console.error('Login error:', error);
-
         this.isLoading = false;
 
-        if (error.status === 401) {
-
-          this.errorMessage = 'Invalid email or password';
-
-        }
-        else if (error.status === 0 || !error.status) {
-
-          this.errorMessage =
-            'Unable to connect to the server';
-
-        }
-        else {
-
-          this.errorMessage =
-            'Server error. Please try again later.';
-
-        }
-
+        this.errorMessage =
+          error.error?.detail ||
+          'Login failed. Please check your email and password.';
       }
-
     });
+  }
 
+  logout(): void {
+
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('role');
+
+    this.router.navigate(['/login']);
   }
 }
