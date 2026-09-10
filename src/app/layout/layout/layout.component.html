@@ -1,10 +1,10 @@
 <div class="flex h-screen max-h-screen min-h-screen overflow-hidden bg-slate-100">
-  <app-sidebar></app-sidebar>
+  <app-sidebar [isOpen]="isSidebarOpen" (sidebarClosed)="closeSidebar()"></app-sidebar>
 
   <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
-    <app-topbar></app-topbar>
+    <app-topbar (toggleSidebar)="toggleSidebar()"></app-topbar>
 
-    <main class="flex-1 overflow-hidden p-3 sm:p-4">
+    <main class="flex-1 overflow-auto p-3 sm:p-4">
       <router-outlet></router-outlet>
     </main>
   </div>

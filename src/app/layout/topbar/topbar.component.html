@@ -1,8 +1,8 @@
-<header class="flex min-h-20 flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4">
+<header class="flex min-h-16 flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-sm sm:px-6 sm:min-h-20">
   <div class="flex items-center gap-3">
     <button
       type="button"
-      class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 shadow-sm transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 md:hidden"
+      class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 md:hidden"
       aria-label="Toggle navigation"
       (click)="onToggleSidebar()"
     >
@@ -11,9 +11,9 @@
       </svg>
     </button>
 
-    <div>
-      <h1 class="mt-1 text-lg font-semibold text-slate-900">Welcome back, {{ userName }}</h1>
-      <p class="mt-1 text-sm text-slate-500">Here's what's happening with your inventory today.</p>
+    <div class="min-w-0">
+      <h1 class="mt-1 truncate text-base font-semibold text-slate-900 sm:text-lg">Welcome back, {{ userName }}</h1>
+      <p class="mt-0.5 hidden text-sm text-slate-500 sm:block">Here's what's happening with your inventory today.</p>
     </div>
   </div>
 
@@ -30,18 +30,18 @@
         (input)="onSearchInput(searchInput.value)"
         (keydown)="onSearchKeydown($event)"
         (blur)="onBlurSuggestions()"
-        class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+        class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-4 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 focus:shadow-sm"
       />
 
       <div
         *ngIf="showSuggestions && suggestions.length > 0"
-        class="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+        class="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl"
       >
         <button
           type="button"
           *ngFor="let suggestion of suggestions; let i = index"
           (mousedown)="selectSuggestion(suggestion)"
-          [class]="i === selectedSuggestionIndex ? 'flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-900 bg-blue-50' : 'flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50'"
+          [class]="i === selectedSuggestionIndex ? 'flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-900 bg-blue-50' : 'flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-150'"
         >
           <span
             [class]="suggestion.type === 'product'
@@ -61,7 +61,7 @@
 
   <div class="order-2 flex items-center gap-3 md:order-3">
     <div class="flex items-center gap-2 border-l border-slate-200 pl-3">
-      <a routerLink="/dashboard" aria-label="Open admin profile" class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+      <a routerLink="/dashboard" aria-label="Open admin profile" class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-blue-500/25 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
         {{ userName.charAt(0).toUpperCase() }}
       </a>
       <span class="hidden text-sm font-medium text-slate-700 sm:inline">{{ userName }}</span>

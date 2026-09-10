@@ -1,10 +1,10 @@
 <section class="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-  <div class="border-b border-slate-200 px-5 py-4">
+  <div class="border-b border-slate-200 px-4 py-3 sm:px-5 sm:py-4">
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <h2 class="text-lg font-semibold text-slate-900">Supplier List</h2>
 
-      <div class="flex flex-col gap-3 md:flex-row md:items-center">
-        <label class="relative block min-w-[220px]">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label class="relative block min-w-0 sm:min-w-[220px]">
           <span class="sr-only">Search suppliers</span>
           <input
             #searchInput
@@ -14,7 +14,7 @@
             (input)="onSearchInput(searchInput.value)"
             (keydown)="onSearchKeydown($event)"
             (blur)="onBlurSuggestions()"
-            class="w-full rounded-xl border border-slate-300 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+            class="w-full rounded-xl border border-slate-300 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200 transition-all duration-200"
           />
           <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 104.39 9.39l2.96 2.96a1 1 0 101.41-1.41l-2.96-2.96A5.5 5.5 0 009 3.5zm0 2a3.5 3.5 0 110 7 3.5 3.5 0 010-7z" clip-rule="evenodd" />
@@ -22,16 +22,15 @@
 
           <div
             *ngIf="showSuggestions && suggestions.length > 0"
-            class="absolute left-0 right-0 z-10 mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+            class="absolute left-0 right-0 z-10 mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl"
           >
             <button
               type="button"
               *ngFor="let suggestion of suggestions; let i = index"
               (mousedown)="selectSuggestion(suggestion)"
-              [class]="i === selectedSuggestionIndex ? 'flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-900 bg-violet-50' : 'flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50'"
+              [class]="i === selectedSuggestionIndex ? 'flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-900 bg-violet-50' : 'flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-150'"
             >
               <span class="min-w-0 flex-1 truncate">{{ suggestion.name }}</span>
-             
             </button>
           </div>
         </label>
@@ -39,7 +38,50 @@
     </div>
   </div>
 
-  <div class="table-scroll min-h-0 flex-1 overflow-x-auto">
+  <!-- Mobile Card View -->
+  <div class="min-h-0 flex-1 overflow-y-auto md:hidden scrollbar-thin">
+
+    <div *ngIf="filteredSuppliers.length === 0" class="px-4 py-12 text-center text-sm text-slate-400">No suppliers found</div>
+
+    <div class="divide-y divide-slate-100 p-3 space-y-1">
+      <div *ngFor="let supplier of filteredSuppliers"
+        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-slate-300">
+
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <p class="truncate font-medium text-slate-900">{{ supplier.name }}</p>
+            <p class="mt-0.5 text-xs text-slate-500 truncate">{{ supplier.contact_email }}</p>
+          </div>
+          <span class="shrink-0 text-xs text-slate-400">{{ supplier.created_at | date:'mediumDate' }}</span>
+        </div>
+
+        <div class="mt-3 text-sm">
+          <div *ngIf="supplier.phone" class="flex items-center gap-2 text-slate-600">
+            <span class="text-xs text-slate-400">Phone:</span>
+            {{ supplier.phone }}
+          </div>
+          <div *ngIf="supplier.address" class="mt-1 flex items-center gap-2 text-slate-600">
+            <span class="text-xs text-slate-400">Address:</span>
+            <span class="truncate">{{ supplier.address }}</span>
+          </div>
+        </div>
+
+        <div *ngIf="isAdmin" class="mt-3 flex justify-end gap-2 border-t border-slate-100 pt-3">
+          <a [routerLink]="['/suppliers/edit', supplier.id]"
+            class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150">
+            Edit
+          </a>
+          <button type="button" (click)="deleteSupplier(supplier.id)"
+            class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors duration-150">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Desktop Table View -->
+  <div class="hidden min-h-0 flex-1 overflow-x-auto md:block">
     <table class="min-w-full divide-y divide-slate-200 text-center">
       <thead class="bg-slate-50 text-sm text-slate-600">
         <tr>
@@ -52,28 +94,25 @@
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-200 bg-white text-sm text-slate-700">
-        <tr *ngFor="let supplier of filteredSuppliers">
-
+        <tr *ngFor="let supplier of filteredSuppliers" class="transition-colors duration-150 hover:bg-slate-50/80">
           <td class="px-4 py-3">
             <div class="font-medium text-slate-900">{{ supplier.name }}</div>
           </td>
-
           <td class="px-4 py-3 text-slate-600">{{ supplier.contact_email }}</td>
           <td class="px-4 py-3">{{ supplier.phone }}</td>
           <td class="px-4 py-3 text-slate-600">{{ supplier.address }}</td>
           <td class="px-4 py-3 text-slate-500">{{ supplier.created_at | date:'mediumDate' }}</td>
           <td class="px-4 py-3">
-
             <div class="flex justify-end gap-2">
-              <a *ngIf="isAdmin" [routerLink]="['/suppliers/edit', supplier.id]" 
-                class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+              <a *ngIf="isAdmin" [routerLink]="['/suppliers/edit', supplier.id]"
+                class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150">
                 Edit
               </a>
-              <button *ngIf="isAdmin" type="button" 
-                (click)="deleteSupplier(supplier.id)" 
-                class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50">
+              <button *ngIf="isAdmin" type="button"
+                (click)="deleteSupplier(supplier.id)"
+                class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors duration-150">
                 Delete
-                </button>
+              </button>
             </div>
           </td>
         </tr>
@@ -84,8 +123,8 @@
     </table>
   </div>
 
-  <div class="border-t border-slate-200 px-5 py-2">
-    <div class="flex flex-col gap-2 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+  <div class="border-t border-slate-200 px-4 py-2 sm:px-5">
+    <div class="flex items-center justify-between text-sm text-slate-500">
       <span>Showing {{ filteredSuppliers.length }} of {{ suppliers.length }} suppliers</span>
     </div>
   </div>

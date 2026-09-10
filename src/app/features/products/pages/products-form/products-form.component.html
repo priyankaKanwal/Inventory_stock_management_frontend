@@ -1,20 +1,18 @@
-<main class="mx-auto flex h-full min-h-0 max-w-5xl flex-col gap-3  px-6">
+<main class="mx-auto flex h-full min-h-0 max-w-5xl flex-col gap-3 px-4 sm:px-6">
 
   <!-- Header -->
-
-  <div class="flex items-center justify-between">
-    <h1 class="text-3xl font-semibold text-slate-900">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <h1 class="text-2xl font-semibold text-slate-900 sm:text-3xl">
       {{ editMode ? 'Edit Product' : 'Add Product' }}
     </h1>
 
-<button
-  type="button"
-  (click)="cancel()"
-  class="rounded-xl border border-slate-300 px-4 py-2.5"
->
-  Back to list
-</button>
-
+    <button
+      type="button"
+      (click)="cancel()"
+      class="self-start rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-all duration-200 hover:bg-slate-50 hover:shadow-sm"
+    >
+      Back to list
+    </button>
   </div>
 
   <!-- Form -->
@@ -29,12 +27,12 @@
 
   <!-- Product Name -->
   <div>
-    <label>Product Name</label>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Product Name</label>
 
     <input
       type="text"
       formControlName="name"
-      class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
     />
 
     <p
@@ -48,12 +46,12 @@
 
   <!-- SKU -->
   <div>
-    <label>SKU</label>
+    <label class="mb-2 block text-sm font-medium text-slate-700">SKU</label>
 
     <input
       type="text"
       formControlName="sku"
-      class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
     />
 
     <p
@@ -67,11 +65,11 @@
 
   <!-- Category Name -->
   <div>
-    <label>Category Name</label>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Category Name</label>
 
     <select
       formControlName="category_name"
-      class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
     >
       <option [ngValue]="null">Select a category name</option>
 
@@ -94,11 +92,11 @@
 
   <!-- Supplier Name -->
   <div>
-    <label>Supplier Name</label>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Supplier Name</label>
 
     <select
       formControlName="supplier_name"
-      class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
     >
       <option [ngValue]="null">Select a supplier name</option>
 
@@ -121,12 +119,12 @@
 
   <!-- Price -->
   <div>
-    <label>Unit Price</label>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Unit Price</label>
 
     <input
       type="number"
       formControlName="unit_price"
-      class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
     />
 
     <p
@@ -140,12 +138,12 @@
 
   <!-- Quantity -->
   <div>
-    <label>Quantity</label>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Quantity</label>
 
     <input
       type="number"
       formControlName="quantity_in_stock"
-      class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
     />
 
     <p
@@ -159,12 +157,12 @@
 
   <!-- Reorder Level -->
   <div>
-    <label>Reorder Qty.</label>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Reorder Qty.</label>
 
     <input
       type="number"
       formControlName="reorder_level"
-      class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
     />
 
     <p
@@ -178,12 +176,12 @@
 
   <!-- Description -->
   <div class="md:col-span-2">
-    <label>Description (optional)</label>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Description (optional)</label>
 
     <textarea
       rows="4"
       formControlName="description"
-      class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
     ></textarea>
   </div>
 
@@ -198,13 +196,13 @@
 
 
   <!-- Buttons -->
-  <div class="md:col-span-2 flex justify-end gap-3">
+  <div class="md:col-span-2 flex flex-col gap-3 sm:flex-row sm:justify-end">
 
     <button
       type="button"
       (click)="cancel()"
       [disabled]="submitting"
-      class="rounded-xl border border-slate-300 px-4 py-2.5"
+      class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-all duration-200 hover:bg-slate-50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
     >
       Cancel
     </button>
@@ -212,7 +210,7 @@
     <button
       type="submit"
       [disabled]="submitting"
-      class="rounded-xl bg-blue-600 px-4 py-2.5 text-white"
+      class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {{ submitting ? 'Saving...' : (editMode ? 'Update Product' : 'Save Product') }}
     </button>
