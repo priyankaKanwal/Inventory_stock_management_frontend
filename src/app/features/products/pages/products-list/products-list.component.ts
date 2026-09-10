@@ -40,10 +40,10 @@ export class ProductsListComponent implements OnInit {
 
   // Category / Supplier name maps
   private categoryNames =
-    new Map<number, string>();
+    new Map<string, string>();
 
   private supplierNames =
-    new Map<number, string>();
+    new Map<string, string>();
 
   // Pagination variables
   currentPage: number = 1;
@@ -426,10 +426,12 @@ export class ProductsListComponent implements OnInit {
 
   //delete product
   deleteProduct(
-    id: number
+    id: string
   ): void {
 
-    const product = this.products.find((item) => item.id === id);
+    const product = this.products.find(
+      (item) => String(item.id) === String(id)
+    );
 
     if (!product) {
       return;
@@ -445,7 +447,9 @@ export class ProductsListComponent implements OnInit {
 
     this.productService.deleteProduct(id).subscribe({
       next: () => {
-        this.products = this.products.filter((item) => item.id !== id);
+        this.products = this.products.filter(
+          (item) => String(item.id) !== String(id)
+        );
       },
       error: (error) => {
         console.error('Error deleting product:', error);

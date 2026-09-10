@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { SupplierService } from '../../../../services/supplier.service';
+import { Supplier, SupplierService } from '../../../../services/supplier.service';
 import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
@@ -14,7 +14,7 @@ export class SuplierFormComponent implements OnInit {
   supplierForm: FormGroup;
 
   isEditMode = false;
-  supplierId: number | null = null;
+  supplierId: string | null = null;
   errorMessage = '';
   isLoading = false;
 
@@ -39,6 +39,7 @@ export class SuplierFormComponent implements OnInit {
     this.checkEditMode();
   }
 
+  //edit mode check for supplier form
   checkEditMode(): void {
 
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -48,12 +49,11 @@ export class SuplierFormComponent implements OnInit {
     }
 
     this.isEditMode = true;
-    this.supplierId = Number(idParam);
+    this.supplierId = String(idParam);
 
     this.supplierService.getSupplierById(this.supplierId).subscribe({
 
-      next: (supplier) => {
-
+      next: (supplier: Supplier) => {
         this.supplierForm.patchValue({
           name: supplier.name,
           contact_email: supplier.contact_email,
@@ -68,80 +68,118 @@ export class SuplierFormComponent implements OnInit {
         console.error('Error loading supplier:', error);
 
         this.errorMessage = 'Could not load supplier.';
-
       }
 
     });
 
   }
 
+  // Create data to send to API
+  private buildPayload(): Omit<Supplier, 'id' | 'created_at'> {
 
+    const formValue = this.supplierForm.value;
+
+    return {
+      name: formValue.name,
+      contact_email: formValue.contact_email,
+      phone: formValue.phone,
+      address: formValue.address,
+      description: undefined
+    };
+
+  }
 
   onSubmit(): void {
 
     // Check form validation
     if (this.supplierForm.invalid) {
+
       this.supplierForm.markAllAsTouched();
+
       return;
     }
 
-    // Get form data
-    const formValue = this.supplierForm.value;
-
-    // Data sent to API
-    const payload = {
-      name: formValue.name,
-      contact_email: formValue.contact_email,
-      phone: formValue.phone,
-      address: formValue.address
-    };
+    const payload = this.buildPayload();
 
     this.errorMessage = '';
     this.isLoading = true;
 
-    // Update supplier
+    // Update category
     if (this.isEditMode && this.supplierId) {
 
       this.supplierService
         .updateSupplier(this.supplierId, payload)
         .subscribe({
+
           next: () => {
+
             this.isLoading = false;
+
             this.router.navigate(['/suppliers']);
+
           },
-          error: (error) => {
+
+          error: (error: HttpErrorResponse) => {
+
             this.isLoading = false;
+
             console.error('Error updating supplier:', error);
+
             this.errorMessage =
               error.status === 409
                 ? 'A supplier with this name already exists.'
                 : 'Unable to update the supplier. Please try again.';
+
           }
+
         });
 
       return;
     }
 
     // Add supplier
-    this.supplierService.addSupplier(payload).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.router.navigate(['/suppliers']);
-      },
-      error: (error) => {
-        this.isLoading = false;
-        console.error('Error adding supplier:', error);
-        this.errorMessage =
-          error.status === 409
-            ? 'A supplier with this name already exists.'
-            : 'Unable to add the supplier. Please try again.';
-      }
-    });
+    this.supplierService
+      .addSupplier(payload)
+      .subscribe({
+
+        next: () => {
+
+          this.isLoading = false;
+
+          this.router.navigate(['/suppliers']);
+
+        },
+
+        error: (error: HttpErrorResponse) => {
+
+          this.isLoading = false;
+
+          console.error('Error adding supplier:', error);
+
+          this.errorMessage =
+            error.status === 409
+              ? 'A supplier with this name already exists.'
+              : 'Unable to add the supplier. Please try again.';
+
+        }
+
+      });
+
   }
 
   // Go back to supplier list
   cancel(): void {
+
+    this.supplierForm.reset({
+      name: '',
+      contact_email: '',
+      phone: '',
+      address: ''
+    });
+
     this.router.navigate(['/suppliers']);
+
   }
+
 }
 

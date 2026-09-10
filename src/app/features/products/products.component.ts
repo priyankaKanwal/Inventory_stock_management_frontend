@@ -6,13 +6,13 @@ import { ProductService } from '../../services/product.service';
 
 // Product interface
 export interface Product {
-  id: number;
+  id: string;
   name: string;
   sku: string;
   description?: string | null;
-  category_id: number;
+  category_id: string;
   category_name?: string | null;
-  supplier_id: number;
+  supplier_id: string;
   supplier_name?: string | null;
   unit_price: number;
   quantity_in_stock: number;

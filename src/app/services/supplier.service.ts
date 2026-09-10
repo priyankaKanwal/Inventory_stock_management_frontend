@@ -22,7 +22,7 @@ export class SupplierService extends ApiService {
   }
 
   //fetch a single supplier by ID
-  getSupplierById(id: number): Observable<Supplier> {
+  getSupplierById(id: string): Observable<Supplier> {
     return this.http.get<Supplier>(this.buildUrl(`${`suppliers/`}${id}`));
   }
 
@@ -32,12 +32,12 @@ export class SupplierService extends ApiService {
   }
 
   //update an existing supplier
-  updateSupplier(id: number, supplier: Partial<Omit<Supplier, 'id' | 'created_at'>>): Observable<Supplier> {
+  updateSupplier(id: string, supplier: Partial<Omit<Supplier, 'id' | 'created_at'>>): Observable<Supplier> {
     return this.http.put<Supplier>(this.buildUrl(`${`suppliers/`}${id}`), supplier);
   }
 
   //delete a supplier by ID
-  deleteSupplier(id: number): Observable<void> {
+  deleteSupplier(id: string): Observable<void> {
     return this.http.delete<void>(this.buildUrl(`${`suppliers/`}${id}`));
   }
 }

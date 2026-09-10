@@ -1,73 +1,44 @@
 <div class="relative flex h-full w-full min-h-0">
-  <div
-    *ngIf="isOpen"
-    class="fixed inset-0 z-40 bg-slate-950/50 md:hidden"
-    (click)="closeSidebar()"
-    aria-hidden="true"
-  ></div>
+  <div *ngIf="isOpen" class="fixed inset-0 z-40 bg-slate-950/50 md:hidden" (click)="closeSidebar()" aria-hidden="true">
+  </div>
 
-  <aside
-    [class.-translate-x-full]="!isOpen"
-    [class.translate-x-0]="isOpen"
-    class="fixed inset-y-0 left-0 z-50 flex h-screen w-72 shrink-0 -translate-x-full flex-col bg-slate-950 px-4 py-6 text-slate-300 transition-transform duration-200 md:static md:inset-auto md:z-auto md:h-full md:w-64 md:translate-x-0 md:transform-none md:shadow-none"
-  >
+  <aside [class.-translate-x-full]="!isOpen" [class.translate-x-0]="isOpen"
+    class="fixed inset-y-0 left-0 z-50 flex h-screen w-72 shrink-0 -translate-x-full flex-col bg-slate-950 px-4 py-6 text-slate-300 transition-transform duration-200 md:static md:inset-auto md:z-auto md:h-full md:w-64 md:translate-x-0 md:transform-none md:shadow-none">
     <div class="flex items-center justify-between border-b border-slate-800 px-3 pb-6">
       <div>
         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Inventory</p>
         <h2 class="mt-2 text-lg font-semibold leading-6 text-white">Stock Management</h2>
       </div>
-
-      <button
-        type="button"
-        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 md:hidden"
-        aria-label="Close navigation"
-        (click)="closeSidebar()"
-      >
-        ✕
-      </button>
     </div>
 
     <nav class="mt-8 flex-1 overflow-y-auto" aria-label="Sidebar navigation">
       <p class="px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Workspace</p>
 
       <div class="mt-3 space-y-1">
-        <a
-          routerLink="/dashboard"
-          routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-950/30"
-          [routerLinkActiveOptions]="{ exact: true }"
-          (click)="closeSidebar()"
-          class="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-        >
+        <a routerLink="/dashboard" routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-950/30"
+          [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()"
+          class="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400">
           <span class="mr-3 w-5 text-center text-base" aria-hidden="true">⌂</span>
           Dashboard
         </a>
 
-        <a
-          routerLink="/products"
-          routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-950/30"
+        <a routerLink="/products" routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-950/30"
           (click)="closeSidebar()"
-          class="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-        >
+          class="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400">
           <span class="mr-3 w-5 text-center text-base" aria-hidden="true">▦</span>
           Products
         </a>
 
-        <a
-          routerLink="/categories"
-          routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-950/30"
+        <a routerLink="/categories" routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-950/30"
           (click)="closeSidebar()"
-          class="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-        >
+          class="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400">
           <span class="mr-3 w-5 text-center text-base" aria-hidden="true">◈</span>
           Categories
         </a>
 
-        <a
-          routerLink="/suppliers"
-          routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-950/30"
+        <a routerLink="/suppliers" routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-950/30"
           (click)="closeSidebar()"
-          class="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-        >
+          class="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400">
           <span class="mr-3 w-5 text-center text-base" aria-hidden="true">♧</span>
           Suppliers
         </a>
@@ -75,10 +46,10 @@
 
     </nav>
 
-    <a routerLink="/login"
-    class="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-400">
+    <button type="button" (click)="logout()"
+      class="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-400">
       <span class="mr-3 w-5 text-center text-base" aria-hidden="true">↪</span>
       Sign out
-    </a>
+    </button>
   </aside>
 </div>

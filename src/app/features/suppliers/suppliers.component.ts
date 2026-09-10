@@ -3,7 +3,8 @@ import { SupplierService } from '../../services/supplier.service';
 
 //supplier interface
 export interface Supplier {
-  id: number;
+  description: any;
+  id: string;
   name: string;
   contact_email: string;
   phone: string;
@@ -24,8 +25,7 @@ export class SuppliersComponent implements OnInit {
   suppliers: Supplier[] = [];
 
   // Whether current user is an admin (full CRUD access)
-  isAdmin =
-    localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
+  isAdmin = localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
 
   constructor(private supplierService: SupplierService) {}
 
@@ -41,6 +41,20 @@ export class SuppliersComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading suppliers:', error);
+      }
+    });
+  }
+
+  // Delete supplier
+   deleteSupplier(id: string): void {
+    this.supplierService.deleteSupplier(id).subscribe({
+      next: () => {
+        this.suppliers = this.suppliers.filter(
+          supplier => supplier.id !== id
+        );
+      },
+      error: (error) => {
+        console.error('Error deleting supplier:', error);
       }
     });
   }

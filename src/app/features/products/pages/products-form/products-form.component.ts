@@ -24,7 +24,7 @@ export class ProductsFormComponent implements OnInit, OnDestroy {
   errorMessage = '';
 
   editMode = false;
-  productId: number | null = null;
+  productId: string | null = null;
 
   private categorySub?: Subscription;
   private supplierSub?: Subscription;
@@ -149,7 +149,9 @@ export class ProductsFormComponent implements OnInit, OnDestroy {
     }
 
     this.editMode = true;
-    this.productId = Number(idParam);
+    this.productId = idParam;
+
+    //calls getProducts by id 
 
     this.productService.getProductById(this.productId).subscribe({
 

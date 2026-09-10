@@ -7,6 +7,7 @@ import { ApiService } from './api.service';
   providedIn: 'root'
 })
 export class AuthService extends ApiService {
+  router: any;
   
   constructor(http: HttpClient) {
     super(http);
@@ -25,4 +26,19 @@ export class AuthService extends ApiService {
       data
     );
   }
+
+  logout(): Observable<any> {
+    return this.http.post<any>(
+      this.buildUrl('auth/logout'),
+      {}
+    );
+  }
+
+
+   getCurrentUser(): Observable<any> {
+    return this.http.get<any>(
+      this.buildUrl('auth/current-user')
+    );
+  }
+
 }

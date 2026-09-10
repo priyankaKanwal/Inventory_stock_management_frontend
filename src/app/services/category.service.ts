@@ -24,7 +24,7 @@ export class CategoryService extends ApiService {
   }
 
   // GET - Get category by ID
-  getCategoryById(id: number): Observable<Category> {
+  getCategoryById(id: string): Observable<Category> {
     return this.http.get<Category>(
       this.buildUrl(`categories/${id}`)
     );
@@ -40,7 +40,7 @@ export class CategoryService extends ApiService {
 
   // PUT - Update category
   updateCategory(
-    id: number,
+    id: string,
     category: Partial<Omit<Category, 'id' | 'created_at'>>
   ): Observable<Category> {
     return this.http.put<Category>(
@@ -50,7 +50,7 @@ export class CategoryService extends ApiService {
   }
 
   // DELETE - Delete category
-  deleteCategory(id: number): Observable<void> {
+  deleteCategory(id: string): Observable<void> {
     return this.http.delete<void>(
       this.buildUrl(`categories/${id}`)
     );

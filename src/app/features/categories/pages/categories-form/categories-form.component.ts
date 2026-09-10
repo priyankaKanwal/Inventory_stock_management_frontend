@@ -23,7 +23,7 @@ export class CategoriesFormComponent implements OnInit {
   categoryForm: FormGroup;
 
   isEditMode = false;
-  categoryId: number | null = null;
+  categoryId: string | null = null;
   errorMessage = '';
   isLoading = false;
 
@@ -64,7 +64,7 @@ export class CategoriesFormComponent implements OnInit {
     }
 
     this.isEditMode = true;
-    this.categoryId = Number(idParam);
+    this.categoryId = String(idParam);
 
     this.categoryService.getCategoryById(this.categoryId).subscribe({
 

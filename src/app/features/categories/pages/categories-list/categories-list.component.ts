@@ -224,7 +224,7 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
 
 
   // Delete category
-  deleteCategory(id: number): void {
+  deleteCategory(id: string): void {
 
     // Find category that user wants to delete
     const category = this.categories.find((item) => {

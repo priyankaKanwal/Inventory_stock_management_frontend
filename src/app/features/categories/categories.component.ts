@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CategoryService } from '../../services/category.service';
 
 export interface Category {
-  id: number;
+  id: string;
   name: string;
   description: string;
   created_at?: string | null;
@@ -40,7 +40,7 @@ export class CategoriesComponent implements OnInit {
     });
   }
 
-  deleteCategory(id: number): void {
+  deleteCategory(id: string): void {
     this.categoryService.deleteCategory(id).subscribe({
       next: () => {
         this.categories = this.categories.filter(

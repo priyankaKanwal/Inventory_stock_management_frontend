@@ -24,7 +24,7 @@ export class ProductService extends ApiService {
   }
 
   // GET - Get product by ID
-  getProductById(id: number): Observable<Product> {
+  getProductById(id: string): Observable<Product> {
     return this.http.get<Product>(
       this.buildUrl(`products/${id}`)
     );
@@ -46,7 +46,7 @@ export class ProductService extends ApiService {
 
   // PUT - Update product
   updateProduct(
-    id: number,
+    id: string,
     product: Omit<Product, 'id' | 'stock_status'>
   ): Observable<Product> {
 
@@ -59,7 +59,7 @@ export class ProductService extends ApiService {
 
 
   // DELETE - Delete product
-  deleteProduct(id: number): Observable<void> {
+  deleteProduct(id: string): Observable<void> {
 
     return this.http.delete<void>(
       this.buildUrl(`products/${id}`)
