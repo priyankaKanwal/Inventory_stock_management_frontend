@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -7,6 +7,20 @@ import { Subscription } from 'rxjs';
 import { ProductService } from '../../../../services/product.service';
 import { CategoryService, Category } from '../../../../services/category.service';
 import { SupplierService, Supplier } from '../../../../services/supplier.service';
+
+
+// Validator: quantity / reorder level must be a whole number of 0 or more
+export function nonNegativeInteger(control: AbstractControl): ValidationErrors | null {
+  const value = control.value;
+
+  if (value === null || value === '' || value === undefined) {
+    return null;
+  }
+
+  const valid = Number.isInteger(Number(value)) && Number(value) >= 0;
+
+  return valid ? null : { nonNegativeInteger: true };
+}
 
 @Component({
   selector: 'app-products-form',
@@ -47,8 +61,9 @@ export class ProductsFormComponent implements OnInit, OnDestroy {
       supplier_id: [{ value: null, disabled: true }, Validators.required],
       supplier_name: ['', Validators.required],
       unit_price: [null, [Validators.required, Validators.min(0)]],
-      quantity_in_stock: [null, [Validators.required, Validators.min(0)]],
-      reorder_level: [null, [Validators.required, Validators.min(0)]]
+      quantity_in_stock: [null, [Validators.required, nonNegativeInteger]],
+      reorder_level: [null, [Validators.required, nonNegativeInteger]],
+      description: [null]
     });
 
   }
@@ -178,12 +193,28 @@ export class ProductsFormComponent implements OnInit, OnDestroy {
 
         console.error('Error loading product:', error);
 
-        this.errorMessage = 'Could not load product.';
+        this.errorMessage = this.formatError(error);
 
       }
 
     });
 
+  }
+
+
+  // Format FastAPI errors into a readable message
+  private formatError(error: HttpErrorResponse): string {
+    const detail = (error.error as any)?.detail;
+
+    if (typeof detail === 'string') {
+      return `Error ${error.status}: ${detail}`;
+    }
+
+    if (Array.isArray(detail)) {
+      return detail.map((d: any) => d.msg).join(', ');
+    }
+
+    return `Request failed (${error.status}). Please try again.`;
   }
 
 
@@ -220,7 +251,7 @@ export class ProductsFormComponent implements OnInit, OnDestroy {
 
             this.submitting = false;
 
-            this.errorMessage = 'Could not update product.';
+            this.errorMessage = this.formatError(error);
           }
 
         });
@@ -244,7 +275,7 @@ export class ProductsFormComponent implements OnInit, OnDestroy {
 
           this.submitting = false;
 
-          this.errorMessage = 'Could not add product.';
+          this.errorMessage = this.formatError(error);
         }
 
       });

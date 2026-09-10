@@ -55,8 +55,11 @@
           class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
           [class.border-red-500]="supplierForm.get('phone')?.touched && supplierForm.get('phone')?.invalid"
         />
-        <p *ngIf="supplierForm.get('phone')?.touched && supplierForm.get('phone')?.invalid" class="mt-1 text-xs text-red-600">
+        <p *ngIf="supplierForm.get('phone')?.touched && supplierForm.get('phone')?.errors?.['required']" class="mt-1 text-xs text-red-600">
           Phone number is required.
+        </p>
+        <p *ngIf="supplierForm.get('phone')?.touched && supplierForm.get('phone')?.errors?.['pattern']" class="mt-1 text-xs text-red-600">
+          Phone must be exactly 10 digits.
         </p>
       </div>
 
@@ -69,9 +72,6 @@
           class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
           [class.border-red-500]="supplierForm.get('address')?.touched && supplierForm.get('address')?.invalid"
         ></textarea>
-        <p *ngIf="supplierForm.get('address')?.touched && supplierForm.get('address')?.invalid" class="mt-1 text-xs text-red-600">
-          Address is required.
-        </p>
       </div>
 
       <div class="md:col-span-2 flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">

@@ -34,11 +34,4 @@ export class AuthService extends ApiService {
     );
   }
 
-
-   getCurrentUser(): Observable<any> {
-    return this.http.get<any>(
-      this.buildUrl('auth/current-user')
-    );
-  }
-
 }

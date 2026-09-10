@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { ProductService } from '../../services/product.service';
 import { SupplierService } from '../../services/supplier.service';
 import { CategoryService } from '../../services/category.service';
-import { AuthService } from '../../services/auth.service';
 
 export interface Suggestion {
   type: 'product' | 'supplier' | 'category';
@@ -29,27 +28,18 @@ export class TopbarComponent implements OnInit {
   showSuggestions = false;
   selectedSuggestionIndex = -1;
 
-  userName = '';
+  get userName(): string {
+    return localStorage.getItem('username') || '';
+  }
 
   constructor(
     private router: Router,
     private productService: ProductService,
     private supplierService: SupplierService,
-    private categoryService: CategoryService,
-    private authService: AuthService
+    private categoryService: CategoryService
   ) {}
 
   ngOnInit(): void {
-
-    // Get logged-in user
-    this.authService.getCurrentUser().subscribe({
-      next: (user) => {
-        this.userName = user.name;
-      },
-      error: (error) => {
-        console.error('Error loading user:', error);
-      }
-    });
 
     // Get products
     this.productService.getProducts(1, 10).subscribe({

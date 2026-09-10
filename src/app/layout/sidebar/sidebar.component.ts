@@ -24,14 +24,20 @@ export class SidebarComponent {
   logout(): void {
     this.authService.logout().subscribe({
       next: () => {
-        localStorage.removeItem('access_token');
+        this.clearSession();
         this.router.navigate(['/login']);
       },
 
       error: () => {
-        localStorage.removeItem('access_token');
+        this.clearSession();
         this.router.navigate(['/login']);
       }
     });
+  }
+
+  private clearSession(): void {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('username');
   }
 }

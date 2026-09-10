@@ -28,8 +28,8 @@ export class SuplierFormComponent implements OnInit {
     this.supplierForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
       contact_email: ['', [Validators.required, Validators.email]],
-      phone: ['', Validators.required],
-      address: ['', Validators.required]
+      phone: ['', [Validators.required, Validators.pattern('^\\d{10}$')]],
+      address: ['', Validators.maxLength(255)]
     });
   }
 
@@ -67,11 +67,26 @@ export class SuplierFormComponent implements OnInit {
 
         console.error('Error loading supplier:', error);
 
-        this.errorMessage = 'Could not load supplier.';
+        this.errorMessage = this.formatError(error);
       }
 
     });
 
+  }
+
+  // Format FastAPI errors into a readable message
+  private formatError(error: HttpErrorResponse): string {
+    const detail = (error.error as any)?.detail;
+
+    if (typeof detail === 'string') {
+      return `Error ${error.status}: ${detail}`;
+    }
+
+    if (Array.isArray(detail)) {
+      return detail.map((d: any) => d.msg).join(', ');
+    }
+
+    return `Request failed (${error.status}). Please try again.`;
   }
 
   // Create data to send to API
@@ -125,10 +140,7 @@ export class SuplierFormComponent implements OnInit {
 
             console.error('Error updating supplier:', error);
 
-            this.errorMessage =
-              error.status === 409
-                ? 'A supplier with this name already exists.'
-                : 'Unable to update the supplier. Please try again.';
+            this.errorMessage = this.formatError(error);
 
           }
 
@@ -156,10 +168,7 @@ export class SuplierFormComponent implements OnInit {
 
           console.error('Error adding supplier:', error);
 
-          this.errorMessage =
-            error.status === 409
-              ? 'A supplier with this name already exists.'
-              : 'Unable to add the supplier. Please try again.';
+          this.errorMessage = this.formatError(error);
 
         }
 
