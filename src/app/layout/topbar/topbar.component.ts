@@ -145,6 +145,7 @@ export class TopbarComponent implements OnInit {
     return this.dedupe(result).slice(0, 8);
   }
 
+  //global Search
   onSearchInput(query: string): void {
     this.searchQuery = query;
     this.showSuggestions = true;
