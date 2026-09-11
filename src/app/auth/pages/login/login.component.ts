@@ -51,16 +51,14 @@ export class LoginComponent {
           response.access_token
         );
 
-        // Get role from JWT
-        const payload = JSON.parse(
-          atob(response.access_token.split('.')[1])
-        );
-
-        // Save role
+        // Save role from login response
         localStorage.setItem(
           'role',
-          payload.role.toUpperCase()
+          response.role.toUpperCase()
         );
+
+        // Save username from login response
+        localStorage.setItem('username', response.username);
 
         // Login successful
         this.isLoading = false;
@@ -84,6 +82,7 @@ export class LoginComponent {
 
     localStorage.removeItem('access_token');
     localStorage.removeItem('role');
+    localStorage.removeItem('username');
 
     this.router.navigate(['/login']);
   }
