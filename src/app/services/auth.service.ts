@@ -1,14 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+
 import { ApiService } from './api.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService extends ApiService {
-  router: any;
-  
+
   constructor(http: HttpClient) {
     super(http);
   }
@@ -16,10 +16,14 @@ export class AuthService extends ApiService {
   login(data: any): Observable<any> {
     return this.http.post<any>(
       this.buildUrl('auth/login'),
-      data
+      data,
+      {
+        withCredentials: true
+      }
     );
   }
 
+  // Register API
   signup(data: any): Observable<any> {
     return this.http.post<any>(
       this.buildUrl('auth/register'),
@@ -27,11 +31,25 @@ export class AuthService extends ApiService {
     );
   }
 
-  logout(): Observable<any> {
-    return this.http.post<any>(
-      this.buildUrl('auth/logout'),
-      {}
+  // Refresh token API
+  refreshToken(): Observable<any> {
+    return this.http.post(
+      this.buildUrl('auth/refresh'),
+      {},
+      {
+        withCredentials: true
+      }
     );
   }
 
+  // Logout API
+  logout(): Observable<any> {
+    return this.http.post<any>(
+      this.buildUrl('auth/logout'),
+      {},
+      {
+        withCredentials: true
+      }
+    );
+  }
 }
