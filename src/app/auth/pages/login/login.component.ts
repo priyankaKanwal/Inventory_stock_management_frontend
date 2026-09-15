@@ -23,7 +23,7 @@ export class LoginComponent {
   constructor(
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) { }
 
   onSubmit(): void {
 
@@ -45,22 +45,24 @@ export class LoginComponent {
 
       next: (response) => {
 
-        // Save token
+        // Save access token
         localStorage.setItem(
           'access_token',
           response.access_token
         );
 
-        // Save role from login response
+        // Save role
         localStorage.setItem(
           'role',
           response.role.toUpperCase()
         );
 
-        // Save username from login response
-        localStorage.setItem('username', response.username);
+        // Save username
+        localStorage.setItem(
+          'username',
+          response.username
+        );
 
-        // Login successful
         this.isLoading = false;
 
         // Go to dashboard
@@ -81,6 +83,7 @@ export class LoginComponent {
   logout(): void {
 
     localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('role');
     localStorage.removeItem('username');
 
