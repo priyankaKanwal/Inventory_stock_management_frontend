@@ -7,6 +7,8 @@ import { SuplierFormComponent } from './pages/suplier-form/suplier-form.componen
 
 import { roleGuard } from '../../auth/guards/role.guard';
 
+const allRoles = ['SUPER_ADMIN', 'ADMIN_MANAGER', 'STAFF_MANAGER', 'ADMIN', 'STAFF'];
+
 const routes: Routes = [
 
   // Suppliers List
@@ -15,7 +17,7 @@ const routes: Routes = [
     component: SuppliersComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMIN', 'STAFF']
+      roles: allRoles
     }
   },
 
@@ -25,7 +27,7 @@ const routes: Routes = [
     component: SuplierFormComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMIN']
+      roles: allRoles
     }
   },
 
@@ -35,7 +37,7 @@ const routes: Routes = [
     component: SuplierFormComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMIN']
+      roles: allRoles
     }
   }
 

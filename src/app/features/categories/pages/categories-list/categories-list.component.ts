@@ -3,6 +3,8 @@ import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { CategoryService } from '../../../../services/category.service';
+import { TaskCoverageService } from '../../../../services/task-coverage.service';
+import { hasFullInventoryAccess } from '../../../../auth/utils/roles';
 import { Category } from '../../categories.component';
 
 
@@ -16,9 +18,21 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
   // Categories received from parent component
   @Input() categories: Category[] = [];
 
-  // Whether current user is an admin (full CRUD access)
-  isAdmin =
-    localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
+  canManage = hasFullInventoryAccess();
+
+  constructor(
+    private categoryService: CategoryService,
+    private route: ActivatedRoute,
+    private taskCoverage: TaskCoverageService
+  ) {}
+
+  canEditRecord(category: Category): boolean {
+    return this.canManage || this.taskCoverage.canEdit('CATEGORY', category.id);
+  }
+
+  get showActions(): boolean {
+    return this.canManage || this.categories.some((c) => this.taskCoverage.canEdit('CATEGORY', c.id));
+  }
 
   // Search values
   searchQuery = '';
@@ -27,11 +41,6 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
 
   // Store route subscription
   private routeSubscription?: Subscription;
-
-  constructor(
-    private categoryService: CategoryService,
-    private route: ActivatedRoute
-  ) {}
 
   ngOnInit(): void {
 

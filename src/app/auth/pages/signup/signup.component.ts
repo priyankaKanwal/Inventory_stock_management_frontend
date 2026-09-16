@@ -2,14 +2,11 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 
-type Role = 'ADMIN' | 'STAFF';
-
 export interface RegisterRequest {
   email: string;
   username: string;
   password: string;
   confirm_password: string;
-  role: Role;
 }
 
 @Component({
@@ -30,7 +27,6 @@ export class SignupComponent {
   username: string = '';
   password: string = '';
   confirmPassword: string = '';
-  role: Role = 'STAFF';
   errorMessage: string = '';
   successMessage: string = '';
   isLoading = false;
@@ -49,8 +45,7 @@ export class SignupComponent {
       email: this.email.trim().toLowerCase(),
       username: this.username,
       password: this.password,
-      confirm_password: this.confirmPassword,
-      role: this.role
+      confirm_password: this.confirmPassword
     };
 
     this.authService.signup(registerData).subscribe({

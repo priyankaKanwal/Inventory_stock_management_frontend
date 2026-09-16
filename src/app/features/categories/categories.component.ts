@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CategoryService } from '../../services/category.service';
+import { TaskCoverageService } from '../../services/task-coverage.service';
+import { hasFullInventoryAccess } from '../../auth/utils/roles';
 
 export interface Category {
   id: string;
@@ -17,16 +19,20 @@ export class CategoriesComponent implements OnInit {
 
   categories: Category[] = [];
 
-  // Whether current user is an admin (full CRUD access)
-  isAdmin =
-    localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
+  canManage = hasFullInventoryAccess();
 
   constructor(
-    private categoryService: CategoryService
+    private categoryService: CategoryService,
+    private taskCoverage: TaskCoverageService
   ) {}
 
   ngOnInit(): void {
+    this.taskCoverage.reload();
     this.getCategories();
+  }
+
+  canCreateType(): boolean {
+    return this.canManage || this.taskCoverage.canCreate('CATEGORY');
   }
 
   getCategories(): void {

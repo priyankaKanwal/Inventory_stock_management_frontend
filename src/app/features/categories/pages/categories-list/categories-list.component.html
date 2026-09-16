@@ -70,7 +70,7 @@
           <span class="text-xs text-slate-400">
             {{ category.created_at ? (category.created_at | date: 'mediumDate') : '—' }}
           </span>
-          <div *ngIf="isAdmin" class="flex gap-2">
+          <div *ngIf="canEditRecord(category)" class="flex gap-2">
             <a [routerLink]="['/categories/edit', category.id]"
               class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150">
               Edit
@@ -93,7 +93,7 @@
           <th class="px-4 py-3 font-medium">Category</th>
           <th class="px-4 py-3 font-medium">Description</th>
           <th class="px-4 py-3 font-medium">Created At</th>
-          <th *ngIf="isAdmin" class="px-4 py-3 font-medium">Action</th>
+          <th *ngIf="showActions" class="px-4 py-3 font-medium">Action</th>
         </tr>
       </thead>
 
@@ -110,9 +110,8 @@
           </td>
 
           <td class="px-4 py-3">
-            <div class="flex justify-end gap-2">
+            <div *ngIf="canEditRecord(category)" class="flex justify-end gap-2">
               <a
-                *ngIf="isAdmin"
                 [routerLink]="['/categories/edit', category.id]"
                 class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150"
               >
@@ -120,7 +119,6 @@
               </a>
 
               <button
-                *ngIf="isAdmin"
                 type="button"
                 (click)="deleteCategory(category.id)"
                 class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors duration-150"

@@ -2,6 +2,8 @@ import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SupplierService, Supplier } from '../../../../services/supplier.service';
+import { TaskCoverageService } from '../../../../services/task-coverage.service';
+import { hasFullInventoryAccess } from '../../../../auth/utils/roles';
 
 @Component({
   selector: 'app-suppliers-list',
@@ -13,9 +15,21 @@ export class SupplierListComponent implements OnInit, OnDestroy {
   // Suppliers received from parent component
   @Input() suppliers: Supplier[] = [];
 
-  // Whether current user is an admin (full CRUD access)
-  isAdmin =
-    localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
+  canManage = hasFullInventoryAccess();
+
+  constructor(
+    private supplierService: SupplierService,
+    private route: ActivatedRoute,
+    private taskCoverage: TaskCoverageService
+  ) {}
+
+  canEditRecord(supplier: Supplier): boolean {
+    return this.canManage || this.taskCoverage.canEdit('SUPPLIER', supplier.id);
+  }
+
+  get showActions(): boolean {
+    return this.canManage || this.suppliers.some((s) => this.taskCoverage.canEdit('SUPPLIER', s.id));
+  }
 
   // Search values
   searchQuery = '';
@@ -24,11 +38,6 @@ export class SupplierListComponent implements OnInit, OnDestroy {
 
   // Store route subscription
   private routeSubscription?: Subscription;
-
-  constructor(
-    private supplierService: SupplierService,
-    private route: ActivatedRoute
-  ) {}
 
   ngOnInit(): void {
 

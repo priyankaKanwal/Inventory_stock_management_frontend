@@ -63,6 +63,14 @@ export class LoginComponent {
           response.username
         );
 
+        // Save user id (when provided by the backend)
+        if (response.user_id) {
+          localStorage.setItem(
+            'user_id',
+            String(response.user_id)
+          );
+        }
+
         this.isLoading = false;
 
         // Go to dashboard

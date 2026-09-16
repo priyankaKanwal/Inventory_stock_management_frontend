@@ -65,6 +65,16 @@
         {{ userName.charAt(0).toUpperCase() }}
       </a>
       <span class="hidden text-sm font-medium text-slate-700 sm:inline">{{ userName }}</span>
+      <span
+        [ngClass]="{
+          'bg-violet-100 text-violet-700 ring-violet-200': currentRole === 'SUPER_ADMIN',
+          'bg-amber-100 text-amber-700 ring-amber-200': currentRole === 'ADMIN_MANAGER' || currentRole === 'STAFF_MANAGER',
+          'bg-emerald-100 text-emerald-700 ring-emerald-200': currentRole === 'ADMIN' || currentRole === 'STAFF'
+        }"
+        class="hidden rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 lg:inline"
+      >
+        {{ currentRole }}
+      </span>
     </div>
   </div>
 </header>

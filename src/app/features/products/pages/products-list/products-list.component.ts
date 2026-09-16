@@ -3,6 +3,8 @@ import { ActivatedRoute } from '@angular/router';
 import { CategoryService } from '../../../../services/category.service';
 import { SupplierService } from '../../../../services/supplier.service';
 import { ProductService } from '../../../../services/product.service';
+import { TaskCoverageService } from '../../../../services/task-coverage.service';
+import { hasFullInventoryAccess } from '../../../../auth/utils/roles';
 import { Product } from '../../products.component';
 import { Category } from '../../../categories/categories.component';
 import { Supplier } from '../../../suppliers/suppliers.component';
@@ -25,9 +27,23 @@ export class ProductsListComponent implements OnInit {
   // Products received from ProductsComponent
   @Input() products: Product[] = [];
 
-  // Whether current user is an admin (full CRUD access)
-  isAdmin =
-    localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
+  canManage = hasFullInventoryAccess();
+
+  constructor(
+    private categoryService: CategoryService,
+    private supplierService: SupplierService,
+    private productService: ProductService,
+    private route: ActivatedRoute,
+    private taskCoverage: TaskCoverageService
+  ) { }
+
+  canEditRecord(product: Product): boolean {
+    return this.canManage || this.taskCoverage.canEdit('PRODUCT', product.id);
+  }
+
+  get showActions(): boolean {
+    return this.canManage || this.products.some((p) => this.taskCoverage.canEdit('PRODUCT', p.id));
+  }
 
   // Search / Filter
   selectedStatus = 'All Status';
@@ -50,14 +66,6 @@ export class ProductsListComponent implements OnInit {
   pageSize: number = 10;
   total: number = 0;
   totalPages: number = 0;
-
-
-  constructor(
-    private categoryService: CategoryService,
-    private supplierService: SupplierService,
-    private productService: ProductService,
-    private route: ActivatedRoute
-  ) { }
 
 
   ngOnInit(): void {

@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { SupplierService } from '../../services/supplier.service';
+import { TaskCoverageService } from '../../services/task-coverage.service';
+import { hasFullInventoryAccess } from '../../auth/utils/roles';
 
 //supplier interface
 export interface Supplier {
@@ -24,13 +26,20 @@ export class SuppliersComponent implements OnInit {
   //array to hold suppliers
   suppliers: Supplier[] = [];
 
-  // Whether current user is an admin (full CRUD access)
-  isAdmin = localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
+  canManage = hasFullInventoryAccess();
 
-  constructor(private supplierService: SupplierService) {}
+  constructor(
+    private supplierService: SupplierService,
+    private taskCoverage: TaskCoverageService
+  ) {}
 
   ngOnInit(): void {
+    this.taskCoverage.reload();
     this.getSuppliers();
+  }
+
+  canCreateType(): boolean {
+    return this.canManage || this.taskCoverage.canCreate('SUPPLIER');
   }
 
   // fetch all suppliers

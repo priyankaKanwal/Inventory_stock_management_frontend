@@ -2,6 +2,8 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { ProductService } from '../../services/product.service';
+import { TaskCoverageService } from '../../services/task-coverage.service';
+import { hasFullInventoryAccess } from '../../auth/utils/roles';
 
 
 // Product interface
@@ -55,19 +57,22 @@ export class ProductsComponent implements OnInit, OnDestroy {
   // Store subscription so we can unsubscribe later
   private productSubscription?: Subscription;
 
-  // Whether current user is an admin (full CRUD access)
-  isAdmin =
-    localStorage.getItem('role')?.toUpperCase() === 'ADMIN';
-
+  canManage = hasFullInventoryAccess();
 
   constructor(
-    private productService: ProductService
+    private productService: ProductService,
+    private taskCoverage: TaskCoverageService
   ) { }
 
 
   // Component initialization
   ngOnInit(): void {
+    this.taskCoverage.reload();
     this.getProducts();
+  }
+
+  canCreateType(): boolean {
+    return this.canManage || this.taskCoverage.canCreate('PRODUCT');
   }
 
 

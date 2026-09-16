@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { ProductService } from '../../services/product.service';
 import { SupplierService } from '../../services/supplier.service';
 import { CategoryService } from '../../services/category.service';
+import { currentRole } from '../../auth/utils/roles';
 
 export interface Suggestion {
   type: 'product' | 'supplier' | 'category';
@@ -30,6 +31,10 @@ export class TopbarComponent implements OnInit {
 
   get userName(): string {
     return localStorage.getItem('username') || '';
+  }
+
+  get currentRole(): string {
+    return currentRole();
   }
 
   constructor(

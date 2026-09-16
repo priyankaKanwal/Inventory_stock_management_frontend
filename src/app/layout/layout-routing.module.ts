@@ -5,6 +5,9 @@ import { LayoutComponent } from './layout/layout.component';
 
 import { roleGuard } from '../auth/guards/role.guard';
 
+const allRoles = ['SUPER_ADMIN', 'ADMIN_MANAGER', 'STAFF_MANAGER', 'ADMIN', 'STAFF'];
+const superAdminRoles = ['SUPER_ADMIN'];
+
 const routes: Routes = [
 
   {
@@ -20,7 +23,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: ['ADMIN', 'STAFF']
+          roles: allRoles
         },
 
         loadChildren: () =>
@@ -35,7 +38,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: ['ADMIN', 'STAFF']
+          roles: allRoles
         },
 
         loadChildren: () =>
@@ -50,7 +53,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: ['ADMIN', 'STAFF']
+          roles: allRoles
         },
 
         loadChildren: () =>
@@ -65,12 +68,42 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: ['ADMIN', 'STAFF']
+          roles: allRoles
         },
 
         loadChildren: () =>
           import('../features/suppliers/suppliers.module')
             .then(module => module.SuppliersModule)
+      },
+
+      // My Tasks + Manage Tasks (guards on child routes)
+      {
+        path: 'tasks',
+
+        canActivate: [roleGuard],
+
+        data: {
+          roles: allRoles
+        },
+
+        loadChildren: () =>
+          import('../features/tasks/tasks.module')
+            .then(module => module.TasksModule)
+      },
+
+      // User Management (super admin only)
+      {
+        path: 'admin/users',
+
+        canActivate: [roleGuard],
+
+        data: {
+          roles: superAdminRoles
+        },
+
+        loadChildren: () =>
+          import('../features/users/users.module')
+            .then(module => module.UsersModule)
       },
 
       // Default

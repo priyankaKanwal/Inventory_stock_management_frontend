@@ -7,6 +7,8 @@ import { ProductsFormComponent } from './pages/products-form/products-form.compo
 
 import { roleGuard } from '../../auth/guards/role.guard';
 
+const allRoles = ['SUPER_ADMIN', 'ADMIN_MANAGER', 'STAFF_MANAGER', 'ADMIN', 'STAFF'];
+
 const routes: Routes = [
 
   // Products List
@@ -15,7 +17,7 @@ const routes: Routes = [
     component: ProductsComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMIN', 'STAFF']
+      roles: allRoles
     }
   },
 
@@ -25,7 +27,7 @@ const routes: Routes = [
     component: ProductsFormComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMIN']
+      roles: allRoles
     }
   },
 
@@ -35,7 +37,7 @@ const routes: Routes = [
     component: ProductsFormComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMIN']
+      roles: allRoles
     }
   }
 

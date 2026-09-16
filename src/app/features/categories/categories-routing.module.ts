@@ -7,6 +7,8 @@ import { CategoriesFormComponent } from './pages/categories-form/categories-form
 
 import { roleGuard } from '../../auth/guards/role.guard';
 
+const allRoles = ['SUPER_ADMIN', 'ADMIN_MANAGER', 'STAFF_MANAGER', 'ADMIN', 'STAFF'];
+
 const routes: Routes = [
 
   // Categories List
@@ -15,7 +17,7 @@ const routes: Routes = [
     component: CategoriesComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMIN', 'STAFF']
+      roles: allRoles
     }
   },
 
@@ -25,7 +27,7 @@ const routes: Routes = [
     component: CategoriesFormComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMIN']
+      roles: allRoles
     }
   },
 
@@ -35,7 +37,7 @@ const routes: Routes = [
     component: CategoriesFormComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMIN']
+      roles: allRoles
     }
   }
 
