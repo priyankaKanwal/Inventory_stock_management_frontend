@@ -4,7 +4,28 @@ import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from './layout/layout.component';
 
 import { roleGuard } from '../auth/guards/role.guard';
-import { ALL_ROLES, SUPER_ADMIN_ROLE } from '../auth/utils/roles';
+import {
+  SUPER_ADMIN_ROLE,
+  INVENTORY_MANAGER_ROLE,
+  ORDER_MANAGER_ROLE,
+  INVENTORY_STAFF_ROLE,
+  ORDER_STAFF_ROLE
+} from '../auth/utils/roles';
+
+const INVENTORY_VIEW = [SUPER_ADMIN_ROLE, INVENTORY_MANAGER_ROLE];
+const ORDER_VIEW = [
+  SUPER_ADMIN_ROLE,
+  ORDER_MANAGER_ROLE,
+  ORDER_STAFF_ROLE,
+  INVENTORY_MANAGER_ROLE
+];
+const PREDICTION_VIEW = ORDER_VIEW;
+const PRODUCT_VIEW = [
+  SUPER_ADMIN_ROLE,
+  INVENTORY_MANAGER_ROLE,
+  INVENTORY_STAFF_ROLE,
+  ORDER_MANAGER_ROLE
+];
 
 const routes: Routes = [
 
@@ -21,7 +42,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: ALL_ROLES
+          roles: [...INVENTORY_VIEW, ...ORDER_VIEW, INVENTORY_STAFF_ROLE]
         },
 
         loadChildren: () =>
@@ -36,7 +57,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: ALL_ROLES
+          roles: PRODUCT_VIEW
         },
 
         loadChildren: () =>
@@ -51,7 +72,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: ALL_ROLES
+          roles: INVENTORY_VIEW
         },
 
         loadChildren: () =>
@@ -66,7 +87,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: ALL_ROLES
+          roles: INVENTORY_VIEW
         },
 
         loadChildren: () =>
@@ -81,12 +102,57 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: ALL_ROLES
+          roles: [...INVENTORY_VIEW, ...ORDER_VIEW, INVENTORY_STAFF_ROLE]
         },
 
         loadChildren: () =>
           import('../features/tasks/tasks.module')
             .then(module => module.TasksModule)
+      },
+
+      // Sales & Fulfillment Orders
+      {
+        path: 'orders',
+
+        canActivate: [roleGuard],
+
+        data: {
+          roles: ORDER_VIEW
+        },
+
+        loadChildren: () =>
+          import('../features/orders/orders.module')
+            .then(module => module.OrdersModule)
+      },
+
+      // Customer Accounts
+      {
+        path: 'customers',
+
+        canActivate: [roleGuard],
+
+        data: {
+          roles: [SUPER_ADMIN_ROLE, ORDER_MANAGER_ROLE]
+        },
+
+        loadChildren: () =>
+          import('../features/customers/customers.module')
+            .then(module => module.CustomersModule)
+      },
+
+      // AI Delivery ETA / Predictions
+      {
+        path: 'predictions',
+
+        canActivate: [roleGuard],
+
+        data: {
+          roles: PREDICTION_VIEW
+        },
+
+        loadChildren: () =>
+          import('../features/predictions/predictions.module')
+            .then(module => module.PredictionsModule)
       },
 
       // User Management (super admin only)

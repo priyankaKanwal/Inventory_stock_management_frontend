@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { ApiService } from './api.service';
@@ -7,6 +7,19 @@ import { Product, ProductsResponse } from '../features/products/products.compone
 
 export { Product };
 
+export interface ProductQuery {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  categoryId?: string;
+  stockStatus?: string;
+}
+
+export interface StockAdjustmentPayload {
+  quantity: number;
+  operation: 'IN' | 'OUT';
+  reason: string;
+}
 
 @Injectable({ providedIn: 'root' })
 
@@ -16,10 +29,28 @@ export class ProductService extends ApiService {
   }
 
 
-  // GET - Get all products
-  getProducts(page: number, pageSize: number): Observable<ProductsResponse> {
+  // GET - Get all products with server-side filters & pagination
+  getProducts(query: ProductQuery = {}): Observable<ProductsResponse> {
+    let params = new HttpParams();
+
+    params = params.set('page', String(query.page ?? 1));
+    params = params.set('page_size', String(query.pageSize ?? 10));
+
+    if (query.search) {
+      params = params.set('search', query.search);
+    }
+
+    if (query.categoryId) {
+      params = params.set('category_id', query.categoryId);
+    }
+
+    if (query.stockStatus) {
+      params = params.set('stock_status', query.stockStatus);
+    }
+
     return this.http.get<ProductsResponse>(
-      this.buildUrl(`products/?page=${page}&page_size=${pageSize}`)
+      this.buildUrl('products/'),
+      { params }
     );
   }
 
@@ -53,6 +84,20 @@ export class ProductService extends ApiService {
     return this.http.put<Product>(
       this.buildUrl(`products/${id}`),
       product
+    );
+
+  }
+
+
+  // PATCH - Adjust stock (IN / OUT)
+  adjustStock(
+    id: string,
+    payload: StockAdjustmentPayload
+  ): Observable<Product> {
+
+    return this.http.patch<Product>(
+      this.buildUrl(`products/${id}/stock`),
+      payload
     );
 
   }

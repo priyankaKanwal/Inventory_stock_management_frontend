@@ -67,9 +67,11 @@
       <span class="hidden text-sm font-medium text-slate-700 sm:inline">{{ userName }}</span>
       <span
         [ngClass]="{
-          'bg-violet-100 text-violet-700 ring-violet-200': currentRole === 'SUPER_ADMIN',
-          'bg-amber-100 text-amber-700 ring-amber-200': currentRole === 'ADMIN_MANAGER' || currentRole === 'STAFF_MANAGER',
-          'bg-emerald-100 text-emerald-700 ring-emerald-200': currentRole === 'ADMIN' || currentRole === 'STAFF'
+          'bg-red-100 text-red-700 ring-red-200': currentRole === 'SUPER_ADMIN',
+          'bg-violet-100 text-violet-700 ring-violet-200': currentRole === 'INVENTORY_MANAGER',
+          'bg-amber-100 text-amber-700 ring-amber-200': currentRole === 'ORDER_MANAGER',
+          'bg-emerald-100 text-emerald-700 ring-emerald-200': currentRole === 'INVENTORY_STAFF',
+          'bg-sky-100 text-sky-700 ring-sky-200': currentRole === 'ORDER_STAFF'
         }"
         class="hidden rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 lg:inline"
       >

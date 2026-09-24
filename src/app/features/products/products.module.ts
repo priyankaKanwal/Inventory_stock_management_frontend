@@ -8,6 +8,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { ProductsComponent } from './products.component';
 import { ProductsFormComponent } from './pages/products-form/products-form.component';
 import { ProductsListComponent } from './pages/products-list/products-list.component';
+import { ModalComponent } from '../../shared/components/modal/modal.component';
 
 @NgModule({
   declarations: [
@@ -19,7 +20,8 @@ import { ProductsListComponent } from './pages/products-list/products-list.compo
     CommonModule,
     RouterModule,
     ProductsRoutingModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    ModalComponent
   ]
 })
 export class ProductsModule { }

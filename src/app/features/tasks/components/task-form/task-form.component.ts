@@ -105,7 +105,7 @@ export class TaskFormComponent implements OnInit {
   }
 
   loadRecordOptions(): void {
-    this.productService.getProducts(1, 50).subscribe({
+    this.productService.getProducts({ page: 1, pageSize: 50 }).subscribe({
       next: (response) => {
         this.products = response.items || [];
       },

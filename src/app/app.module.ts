@@ -5,7 +5,7 @@ import { RouterModule } from '@angular/router';
 
 import { AppComponent } from './app.component';
 import { routes } from './app.routes';
-import { AuthInterceptor } from './auth/interceptors/auth.interceptor';
+import { authInterceptor } from './auth/interceptors/auth.interceptor';
 
 @NgModule({
   declarations: [AppComponent],
@@ -16,7 +16,7 @@ import { AuthInterceptor } from './auth/interceptors/auth.interceptor';
   ],
   providers: [
     provideHttpClient(
-      withInterceptors([AuthInterceptor])
+      withInterceptors([authInterceptor])
     )
   ],
 

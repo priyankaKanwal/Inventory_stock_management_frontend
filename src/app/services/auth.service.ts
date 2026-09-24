@@ -13,6 +13,23 @@ export class AuthService extends ApiService {
     super(http);
   }
 
+  // Access token helpers
+  getToken(): string | null {
+    return localStorage.getItem('access_token');
+  }
+
+  setToken(token: string): void {
+    localStorage.setItem('access_token', token);
+  }
+
+  getUserRole(): string | null {
+    return localStorage.getItem('role');
+  }
+
+  getUsername(): string | null {
+    return localStorage.getItem('username');
+  }
+
   login(data: any): Observable<any> {
     return this.http.post<any>(
       this.buildUrl('auth/login'),

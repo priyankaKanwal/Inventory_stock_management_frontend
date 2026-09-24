@@ -66,14 +66,14 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     const r = (role || '').toUpperCase();
 
     if (r === 'SUPER_ADMIN') {
+      return 'rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700';
+    }
+
+    if (r === 'INVENTORY_MANAGER' || r === 'ORDER_MANAGER') {
       return 'rounded-full bg-violet-100 px-2 py-1 text-xs font-medium text-violet-700';
     }
 
-    if (r === 'ADMIN_MANAGER' || r === 'STAFF_MANAGER') {
-      return 'rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700';
-    }
-
-    if (r === 'ADMIN') {
+    if (r === 'INVENTORY_STAFF' || r === 'ORDER_STAFF') {
       return 'rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700';
     }
 

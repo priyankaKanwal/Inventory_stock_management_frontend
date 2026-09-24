@@ -47,7 +47,7 @@ export class TopbarComponent implements OnInit {
   ngOnInit(): void {
 
     // Get products
-    this.productService.getProducts(1, 10).subscribe({
+    this.productService.getProducts({ page: 1, pageSize: 10 }).subscribe({
       next: (response) => {
         this.products = response.items.map(
           (p: { id: string; name: string; sku: string }) => ({

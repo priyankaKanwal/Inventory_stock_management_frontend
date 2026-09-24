@@ -31,7 +31,7 @@ export interface ProductsResponse {
   stock_status: string;
   items: Product[];
   page: number;
-  page_Size: number;
+  page_size: number;
   total: number;
   total_pages: number;
 }
@@ -80,7 +80,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
   getProducts(): void {
 
     this.productSubscription = this.productService
-      .getProducts(this.currentPage, this.pageSize)
+      .getProducts({ page: this.currentPage, pageSize: this.pageSize })
       .subscribe({
 
         // API success
@@ -90,7 +90,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
           this.currentPage = response.page;
 
-          this.pageSize = response.page_Size;
+          this.pageSize = response.page_size ?? this.pageSize;
 
           this.total = response.total;
 

@@ -1,10 +1,13 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CategoryService } from '../../../../services/category.service';
 import { SupplierService } from '../../../../services/supplier.service';
 import { ProductService } from '../../../../services/product.service';
 import { TaskCoverageService } from '../../../../services/task-coverage.service';
+import { ToastService } from '../../../../services/toast.service';
 import { hasFullInventoryAccess } from '../../../../auth/utils/roles';
+import { formatINR } from '../../../../shared/utils/format';
 import { Product } from '../../products.component';
 import { Category } from '../../../categories/categories.component';
 import { Supplier } from '../../../suppliers/suppliers.component';
@@ -17,24 +20,30 @@ import { Supplier } from '../../../suppliers/suppliers.component';
 })
 
 export class ProductsListComponent implements OnInit {
-  nextPage() {
-    throw new Error('Method not implemented.');
-  }
-  previousPage() {
-    throw new Error('Method not implemented.');
-  }
-
   // Products received from ProductsComponent
   @Input() products: Product[] = [];
 
   canManage = hasFullInventoryAccess();
+
+  // Stock adjustment modal state
+  adjustProduct: Product | null = null;
+  adjustOperation: 'IN' | 'OUT' = 'IN';
+  isAdjusting = false;
+
+  adjustForm: FormGroup = this.fb.group({
+    quantity: [1, [Validators.required, Validators.min(1)]],
+    reason: ['', Validators.required],
+    operation: ['IN']
+  });
 
   constructor(
     private categoryService: CategoryService,
     private supplierService: SupplierService,
     private productService: ProductService,
     private route: ActivatedRoute,
-    private taskCoverage: TaskCoverageService
+    private taskCoverage: TaskCoverageService,
+    private fb: FormBuilder,
+    private toast: ToastService
   ) { }
 
   canEditRecord(product: Product): boolean {
@@ -47,6 +56,8 @@ export class ProductsListComponent implements OnInit {
 
   // Search / Filter
   selectedStatus = 'All Status';
+
+  selectedCategory = 'All Categories';
 
   searchQuery = '';
 
@@ -61,12 +72,8 @@ export class ProductsListComponent implements OnInit {
   private supplierNames =
     new Map<string, string>();
 
-  // Pagination variables
-  currentPage: number = 1;
-  pageSize: number = 10;
-  total: number = 0;
-  totalPages: number = 0;
-
+  // Dropdown options for the category filter
+  categoryOptions: { id: string; name: string }[] = [];
 
   ngOnInit(): void {
 
@@ -85,12 +92,19 @@ export class ProductsListComponent implements OnInit {
 
         next: (categories: Category[]) => {
 
+          this.categoryOptions = [];
+
           categories.forEach((category) => {
 
             this.categoryNames.set(
               category.id,
               category.name
             );
+
+            this.categoryOptions.push({
+              id: category.id,
+              name: category.name
+            });
 
           });
 
@@ -166,6 +180,15 @@ export class ProductsListComponent implements OnInit {
 
       });
 
+    }
+
+    //filter by category
+    if (
+      this.selectedCategory !== 'All Categories'
+    ) {
+      result = result.filter((product) => {
+        return product.category_id === this.selectedCategory;
+      });
     }
 
     //search query filter
@@ -430,6 +453,89 @@ export class ProductsListComponent implements OnInit {
 
   onStatusChange(status: string): void {
     this.selectedStatus = status;
+  }
+
+  //category filter change
+
+  onCategoryChange(categoryId: string): void {
+    this.selectedCategory = categoryId;
+  }
+
+  //format price as INR
+
+  formatPrice(value: number): string {
+    return formatINR(value);
+  }
+
+  //open stock adjustment modal for a product
+
+  openAdjust(product: Product): void {
+    this.adjustProduct = product;
+    this.adjustOperation = 'IN';
+    this.adjustForm.reset({
+      quantity: 1,
+      reason: '',
+      operation: 'IN'
+    });
+  }
+
+  onOperationChange(operation: string): void {
+    this.adjustOperation = operation === 'OUT' ? 'OUT' : 'IN';
+    this.adjustForm.patchValue({ operation: this.adjustOperation });
+  }
+
+  closeAdjust(): void {
+    this.adjustProduct = null;
+    this.isAdjusting = false;
+  }
+
+  submitAdjust(): void {
+    if (!this.adjustProduct) {
+      return;
+    }
+
+    if (this.adjustForm.invalid) {
+      this.adjustForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.adjustForm.value;
+    const operation = value.operation === 'OUT' ? 'OUT' : 'IN';
+
+    this.isAdjusting = true;
+
+    this.productService.adjustStock(this.adjustProduct.id, {
+      quantity: Number(value.quantity),
+      operation,
+      reason: value.reason
+    }).subscribe({
+      next: (updated) => {
+        this.isAdjusting = false;
+
+        const index = this.products.findIndex(
+          (item) => String(item.id) === String(this.adjustProduct?.id)
+        );
+
+        if (index >= 0) {
+          this.products[index] = updated;
+        }
+
+        this.toast.success(
+          operation === 'IN'
+            ? 'Stock added successfully.'
+            : 'Stock deducted successfully.'
+        );
+
+        this.closeAdjust();
+      },
+      error: (error) => {
+        this.isAdjusting = false;
+        this.toast.error(
+          error.error?.detail ||
+          'Failed to adjust stock.'
+        );
+      }
+    });
   }
 
   //delete product

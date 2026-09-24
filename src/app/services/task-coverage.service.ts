@@ -87,7 +87,7 @@ export class TaskCoverageService {
   // Whether the user may edit / delete / adjust the given record
   canEdit(targetType: TaskTargetType, targetId: string): boolean {
     if (!this.isRestrictedWorker) {
-      return true;
+      return false;
     }
 
     return this.coveredTargets().has(this.key(targetType, targetId));
@@ -96,7 +96,7 @@ export class TaskCoverageService {
   // Whether the user may create a new record of the given type
   canCreate(targetType: TaskTargetType): boolean {
     if (!this.isRestrictedWorker) {
-      return true;
+      return false;
     }
 
     return this.createPermittedTypes().has(targetType);

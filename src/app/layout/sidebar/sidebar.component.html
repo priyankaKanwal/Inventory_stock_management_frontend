@@ -12,8 +12,8 @@
     </div>
 
     <nav class="mt-8 flex-1 overflow-y-auto" aria-label="Sidebar navigation">
-      <p class="px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Workspace</p>
 
+      <p class="px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Overview</p>
       <div class="mt-3 space-y-1">
         <a routerLink="/dashboard" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
           [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()"
@@ -21,50 +21,82 @@
           <span class="mr-3 w-5 text-center text-base transition-transform duration-200 group-hover:scale-110" aria-hidden="true">⌂</span>
           Dashboard
         </a>
+      </div>
 
-        <a routerLink="/products" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+      <p class="mt-6 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Inventory</p>
+      <div class="mt-3 space-y-1">
+        <a *ngIf="canViewProducts" routerLink="/products" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
           (click)="closeSidebar()"
           class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400">
           <span class="mr-3 w-5 text-center text-base transition-transform duration-200 group-hover:scale-110" aria-hidden="true">▦</span>
           Products
         </a>
 
-        <a routerLink="/categories" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+        <a *ngIf="canViewCategories" routerLink="/categories" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
           (click)="closeSidebar()"
           class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400">
           <span class="mr-3 w-5 text-center text-base transition-transform duration-200 group-hover:scale-110" aria-hidden="true">◈</span>
           Categories
         </a>
 
-        <a routerLink="/suppliers" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+        <a *ngIf="canViewSuppliers" routerLink="/suppliers" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
           (click)="closeSidebar()"
           class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400">
           <span class="mr-3 w-5 text-center text-base transition-transform duration-200 group-hover:scale-110" aria-hidden="true">♧</span>
           Suppliers
         </a>
+      </div>
 
-        <a *ngIf="canViewMyTasks" routerLink="/tasks" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+      <p class="mt-6 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Sales &amp; Orders</p>
+      <div class="mt-3 space-y-1">
+        <a *ngIf="canViewOrders" routerLink="/orders" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <span class="mr-3 w-5 text-center text-base transition-transform duration-200 group-hover:scale-110" aria-hidden="true">☰</span>
+          Orders
+        </a>
+
+        <a *ngIf="canViewCustomers" routerLink="/customers" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <span class="mr-3 w-5 text-center text-base transition-transform duration-200 group-hover:scale-110" aria-hidden="true">☺</span>
+          Customers
+        </a>
+      </div>
+
+      <p class="mt-6 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Operations &amp; AI</p>
+      <div class="mt-3 space-y-1">
+        <a *ngIf="canViewPredictions" routerLink="/predictions" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <span class="mr-3 w-5 text-center text-base transition-transform duration-200 group-hover:scale-110" aria-hidden="true">✦</span>
+          AI Delivery ETA
+        </a>
+      </div>
+
+      <p class="mt-6 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Management</p>
+      <div class="mt-3 space-y-1">
+        <a routerLink="/tasks" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
           [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()"
           class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400">
           <span class="mr-3 w-5 text-center text-base transition-transform duration-200 group-hover:scale-110" aria-hidden="true">☑</span>
-          Tasks
+          My Tasks
         </a>
 
-        <a *ngIf="canManageTasks" routerLink="/tasks/manage" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+        <a *ngIf="canManageTaskDelegation" routerLink="/tasks/manage" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
           (click)="closeSidebar()"
           class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400">
           <span class="mr-3 w-5 text-center text-base transition-transform duration-200 group-hover:scale-110" aria-hidden="true">✎</span>
           Manage Tasks
         </a>
 
-        <a *ngIf="canManageUsers" routerLink="/admin/users" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+        <a *ngIf="canViewUsers" routerLink="/admin/users" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
           (click)="closeSidebar()"
           class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400">
           <span class="mr-3 w-5 text-center text-base transition-transform duration-200 group-hover:scale-110" aria-hidden="true">⚙</span>
           User Management
         </a>
       </div>
-
     </nav>
 
     <span class="mb-4 inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-300 ring-1 ring-blue-500/40">

@@ -1,7 +1,18 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { isSuperAdmin, currentRole, hasRoles, MANAGER_ROLES } from '../../auth/utils/roles';
+import {
+  canManageCategories,
+  canManageCustomers,
+  canManageSuppliers,
+  canManageTasks,
+  canViewOrders,
+  canViewPredictions,
+  canViewProducts,
+  currentRole,
+  isSuperAdmin,
+  roleLabel
+} from '../../auth/utils/roles';
 
 @Component({
   selector: 'app-sidebar',
@@ -17,20 +28,40 @@ export class SidebarComponent {
     private router: Router
   ) {}
 
-  get canViewMyTasks(): boolean {
-    return !isSuperAdmin();
+  get canViewProducts(): boolean {
+    return canViewProducts();
   }
 
-  get canManageTasks(): boolean {
-    return isSuperAdmin() || hasRoles(...MANAGER_ROLES);
+  get canViewCategories(): boolean {
+    return canManageCategories();
   }
 
-  get canManageUsers(): boolean {
+  get canViewSuppliers(): boolean {
+    return canManageSuppliers();
+  }
+
+  get canViewOrders(): boolean {
+    return canViewOrders();
+  }
+
+  get canViewCustomers(): boolean {
+    return canManageCustomers();
+  }
+
+  get canManageTaskDelegation(): boolean {
+    return canManageTasks();
+  }
+
+  get canViewPredictions(): boolean {
+    return canViewPredictions();
+  }
+
+  get canViewUsers(): boolean {
     return isSuperAdmin();
   }
 
   get roleBadge(): string {
-    return currentRole();
+    return roleLabel(currentRole());
   }
 
   closeSidebar(): void {
