@@ -40,21 +40,14 @@ export class SidebarComponent {
   logout(): void {
     this.authService.logout().subscribe({
       next: () => {
-        this.clearSession();
+        this.authService.clearSession();
         this.router.navigate(['/login']);
       },
 
       error: () => {
-        this.clearSession();
+        this.authService.clearSession();
         this.router.navigate(['/login']);
       }
     });
-  }
-
-  private clearSession(): void {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('username');
-    localStorage.removeItem('user_id');
   }
 }

@@ -4,9 +4,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from './layout/layout.component';
 
 import { roleGuard } from '../auth/guards/role.guard';
-
-const allRoles = ['SUPER_ADMIN', 'ADMIN_MANAGER', 'STAFF_MANAGER', 'ADMIN', 'STAFF'];
-const superAdminRoles = ['SUPER_ADMIN'];
+import { ALL_ROLES, SUPER_ADMIN_ROLE } from '../auth/utils/roles';
 
 const routes: Routes = [
 
@@ -23,7 +21,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: allRoles
+          roles: ALL_ROLES
         },
 
         loadChildren: () =>
@@ -38,7 +36,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: allRoles
+          roles: ALL_ROLES
         },
 
         loadChildren: () =>
@@ -53,7 +51,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: allRoles
+          roles: ALL_ROLES
         },
 
         loadChildren: () =>
@@ -68,7 +66,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: allRoles
+          roles: ALL_ROLES
         },
 
         loadChildren: () =>
@@ -83,7 +81,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: allRoles
+          roles: ALL_ROLES
         },
 
         loadChildren: () =>
@@ -98,7 +96,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: superAdminRoles
+          roles: [SUPER_ADMIN_ROLE]
         },
 
         loadChildren: () =>

@@ -40,7 +40,5 @@ export const roleGuard: CanActivateFn = (route) => {
     'ROLE GUARD - Access denied'
   );
 
-  // Don't redirect to /dashboard here.
-  // That could create a redirect loop.
   return router.createUrlTree(['/login']);
 };

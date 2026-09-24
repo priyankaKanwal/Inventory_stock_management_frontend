@@ -6,8 +6,7 @@ import { SuppliersComponent } from './suppliers.component';
 import { SuplierFormComponent } from './pages/suplier-form/suplier-form.component';
 
 import { roleGuard } from '../../auth/guards/role.guard';
-
-const allRoles = ['SUPER_ADMIN', 'ADMIN_MANAGER', 'STAFF_MANAGER', 'ADMIN', 'STAFF'];
+import { ALL_ROLES } from '../../auth/utils/roles';
 
 const routes: Routes = [
 
@@ -17,7 +16,7 @@ const routes: Routes = [
     component: SuppliersComponent,
     canActivate: [roleGuard],
     data: {
-      roles: allRoles
+      roles: ALL_ROLES
     }
   },
 
@@ -27,7 +26,7 @@ const routes: Routes = [
     component: SuplierFormComponent,
     canActivate: [roleGuard],
     data: {
-      roles: allRoles
+      roles: ALL_ROLES
     }
   },
 
@@ -37,7 +36,7 @@ const routes: Routes = [
     component: SuplierFormComponent,
     canActivate: [roleGuard],
     data: {
-      roles: allRoles
+      roles: ALL_ROLES
     }
   }
 

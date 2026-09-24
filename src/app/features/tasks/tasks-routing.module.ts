@@ -6,8 +6,7 @@ import { MyTasksComponent } from './pages/my-tasks/my-tasks.component';
 import { ManageTasksComponent } from './pages/manage-tasks/manage-tasks.component';
 
 import { roleGuard } from '../../auth/guards/role.guard';
-
-const managerRoles = ['SUPER_ADMIN', 'ADMIN_MANAGER', 'STAFF_MANAGER'];
+import { SUPER_ADMIN_ROLE, MANAGER_ROLES } from '../../auth/utils/roles';
 
 const routes: Routes = [
 
@@ -23,7 +22,7 @@ const routes: Routes = [
     component: ManageTasksComponent,
     canActivate: [roleGuard],
     data: {
-      roles: managerRoles
+      roles: [SUPER_ADMIN_ROLE, ...MANAGER_ROLES]
     }
   }
 
