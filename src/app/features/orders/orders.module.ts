@@ -6,7 +6,6 @@ import { FormsModule } from '@angular/forms';
 
 import { OrdersRoutingModule } from './orders-routing.module';
 import { OrdersComponent } from './orders.component';
-import { ModalComponent } from '../../shared/components/modal/modal.component';
 
 @NgModule({
   declarations: [
@@ -17,8 +16,7 @@ import { ModalComponent } from '../../shared/components/modal/modal.component';
     RouterModule,
     ReactiveFormsModule,
     FormsModule,
-    OrdersRoutingModule,
-    ModalComponent
+    OrdersRoutingModule
   ]
 })
 export class OrdersModule { }

@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-import { ApiService } from './api.service';
+import { ApiService, Paginated } from './api.service';
 
 export type OrderStatus =
   | 'ORDER_PLACED'
@@ -50,20 +50,10 @@ export interface OrderCreatePayload {
   items: OrderItemInput[];
 }
 
-// Valid transitions enforced by the backend state machine.
-export const NEXT_ORDER_STATUSES: Record<OrderStatus, OrderStatus[]> = {
-  ORDER_PLACED: ['CONFIRMED', 'CANCELLED'],
-  CONFIRMED: ['PROCESSING', 'AWAITING_STOCK', 'CANCELLED'],
-  PROCESSING: ['PACKED', 'AWAITING_STOCK', 'CANCELLED'],
-  AWAITING_STOCK: ['SUPPLIER_ORDER_PLACED', 'CANCELLED'],
-  SUPPLIER_ORDER_PLACED: ['STOCK_RECEIVED', 'CANCELLED'],
-  STOCK_RECEIVED: ['PROCESSING'],
-  PACKED: ['SHIPPED'],
-  SHIPPED: ['OUT_FOR_DELIVERY'],
-  OUT_FOR_DELIVERY: ['DELIVERED'],
-  DELIVERED: [],
-  CANCELLED: []
-};
+export interface OrderQuery {
+  page?: number;
+  pageSize?: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class OrderService extends ApiService {
@@ -72,9 +62,20 @@ export class OrderService extends ApiService {
     super(http);
   }
 
-  getOrders(): Observable<Order[]> {
-    return this.http.get<Order[]>(
-      this.buildUrl('orders/')
+  getOrders(query: OrderQuery = {}): Observable<Paginated<Order>> {
+    const params = new HttpParams()
+      .set('page', String(query.page ?? 1))
+      .set('page_size', String(query.pageSize ?? 10));
+
+    return this.http.get<Paginated<Order>>(
+      this.buildUrl('orders/'),
+      { params }
+    );
+  }
+
+  getAllOrders(): Observable<Order[]> {
+    return this.fetchAll<Order>((page, pageSize) =>
+      this.getOrders({ page, pageSize })
     );
   }
 

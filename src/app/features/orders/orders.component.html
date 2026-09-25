@@ -23,7 +23,7 @@
     {{ errorMessage }}
   </p>
 
-  <section class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+  <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <div class="border-b border-slate-200 px-4 py-3 sm:px-6">
       <h2 class="text-lg font-semibold text-slate-900">Order List</h2>
     </div>
@@ -32,10 +32,13 @@
       Loading orders…
     </div>
 
-    <table
+    <div
       *ngIf="!isLoading && orders.length > 0"
-      class="min-w-full divide-y divide-slate-200 text-center"
+      class="min-h-0 flex-1 overflow-auto scrollbar-thin"
     >
+      <table
+        class="min-w-full divide-y divide-slate-200 text-center"
+      >
       <thead class="bg-slate-50 text-sm text-slate-600">
         <tr>
           <th class="px-4 py-3 font-medium">Order ID</th>
@@ -65,7 +68,7 @@
                 Details
               </button>
               <button
-                *ngIf="canTransition && nextStatuses.length > 0"
+                *ngIf="canUpdateOrder(order)"
                 type="button"
                 (click)="openStatus(order)"
                 class="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors duration-150"
@@ -84,6 +87,7 @@
         </tr>
       </tbody>
     </table>
+    </div>
 
     <div
       *ngIf="!isLoading && orders.length === 0 && !errorMessage"
@@ -91,16 +95,64 @@
     >
       No orders found.
     </div>
+
+    <!-- Pagination -->
+    <div *ngIf="!isLoading && total > 0" class="border-t border-slate-200 px-4 py-2 sm:px-6">
+      <div class="flex flex-col items-center justify-between gap-2 sm:flex-row">
+        <div class="text-sm text-slate-500">
+          Showing
+          <span class="font-medium text-slate-500">{{ startItem }}</span>
+          –
+          <span class="font-medium text-slate-500">{{ endItem }}</span>
+          of
+          <span class="font-medium text-slate-500">{{ total }}</span>
+          orders
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="goToPage(currentPage - 1)"
+            [disabled]="currentPage <= 1"
+            class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Previous
+          </button>
+
+          <span class="px-2 text-sm text-slate-500">
+            Page
+            <span class="font-medium text-slate-500">{{ currentPage }}</span>
+            of
+            <span class="font-medium text-slate-500">{{ totalPages }}</span>
+          </span>
+
+          <button
+            type="button"
+            (click)="goToPage(currentPage + 1)"
+            [disabled]="currentPage >= totalPages"
+            class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- New Order Modal -->
-  <app-modal
-    [isOpen]="showCreateModal"
-    title="New Order"
-    maxWidth="680px"
-    (closeEvent)="showCreateModal = false"
-  >
-    <form [formGroup]="createForm" (ngSubmit)="createOrder()" class="space-y-4" body>
+  <div *ngIf="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+    <div class="flex max-h-[90vh] w-full max-w-[680px] flex-col overflow-hidden rounded-2xl bg-white shadow-xl" role="dialog" aria-modal="true" aria-label="New Order">
+      <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <h2 class="text-lg font-semibold text-slate-900">New Order</h2>
+        <button type="button" (click)="showCreateModal = false" class="rounded-lg p-1 text-slate-400 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400" aria-label="Close dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <form [formGroup]="createForm" (ngSubmit)="createOrder()" class="space-y-4">
       <div>
         <label for="order-customer" class="block text-sm font-medium text-slate-700">Customer</label>
         <select
@@ -166,33 +218,42 @@
         </div>
       </div>
     </form>
+      </div>
 
-    <div footer>
-      <button
-        type="button"
-        (click)="showCreateModal = false"
-        class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150"
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        [disabled]="isSaving || items.length === 0"
-        (click)="createOrder()"
-        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {{ isSaving ? 'Creating…' : 'Create Order' }}
-      </button>
+      <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
+        <button
+          type="button"
+          (click)="showCreateModal = false"
+          class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          [disabled]="isSaving || items.length === 0"
+          (click)="createOrder()"
+          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {{ isSaving ? 'Creating…' : 'Create Order' }}
+        </button>
+      </div>
     </div>
-  </app-modal>
+  </div>
 
   <!-- Details Modal -->
-  <app-modal
-    [isOpen]="showDetailsModal"
-    [title]="selectedOrder ? 'Order ' + shortId(selectedOrder.id) : 'Order Details'"
-    (closeEvent)="showDetailsModal = false"
-  >
-    <div *ngIf="selectedOrder" class="space-y-4" body>
+  <div *ngIf="showDetailsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+    <div class="flex max-h-[90vh] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl bg-white shadow-xl" role="dialog" aria-modal="true" [attr.aria-label]="selectedOrder ? 'Order ' + shortId(selectedOrder.id) : 'Order Details'">
+      <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <h2 class="text-lg font-semibold text-slate-900">{{ selectedOrder ? 'Order ' + shortId(selectedOrder.id) : 'Order Details' }}</h2>
+        <button type="button" (click)="showDetailsModal = false" class="rounded-lg p-1 text-slate-400 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400" aria-label="Close dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div *ngIf="selectedOrder" class="space-y-4">
       <div class="grid grid-cols-2 gap-3 text-sm">
         <div>
           <p class="text-xs text-slate-400">Customer</p>
@@ -237,25 +298,35 @@
           </tbody>
         </table>
       </div>
-    </div>
+      </div>
+      </div>
 
-    <button
-      footer
-      type="button"
-      (click)="showDetailsModal = false"
-      class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150"
-    >
-      Close
-    </button>
-  </app-modal>
+      <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
+        <button
+          type="button"
+          (click)="showDetailsModal = false"
+          class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Status Transition Modal -->
-  <app-modal
-    [isOpen]="showStatusModal"
-    [title]="selectedOrder ? 'Update Status — ' + shortId(selectedOrder.id) : 'Update Status'"
-    (closeEvent)="showStatusModal = false"
-  >
-    <div *ngIf="selectedOrder" class="space-y-4" body>
+  <div *ngIf="showStatusModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+    <div class="flex max-h-[90vh] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl bg-white shadow-xl" role="dialog" aria-modal="true" [attr.aria-label]="selectedOrder ? 'Update Status — ' + shortId(selectedOrder.id) : 'Update Status'">
+      <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <h2 class="text-lg font-semibold text-slate-900">{{ selectedOrder ? 'Update Status — ' + shortId(selectedOrder.id) : 'Update Status' }}</h2>
+        <button type="button" (click)="showStatusModal = false" class="rounded-lg p-1 text-slate-400 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400" aria-label="Close dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div *ngIf="selectedOrder" class="space-y-4">
       <p class="text-sm text-slate-500">
         Current status: <span class="font-semibold text-slate-900">{{ selectedOrder.status }}</span>
       </p>
@@ -275,24 +346,36 @@
       <div *ngIf="nextStatuses.length === 0" class="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-500">
         This order is in a terminal state and can no longer transition.
       </div>
-    </div>
+      </div>
+      </div>
 
-    <div footer>
-      <button
-        type="button"
-        (click)="showStatusModal = false"
-        class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150"
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        [disabled]="isSaving || !selectedStatus"
-        (click)="updateStatus()"
-        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {{ isSaving ? 'Updating…' : 'Update Status' }}
-      </button>
+      <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
+        <button
+          type="button"
+          (click)="showStatusModal = false"
+          class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          [disabled]="isSaving || !selectedStatus"
+          (click)="updateStatus()"
+          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {{ isSaving ? 'Updating…' : 'Update Status' }}
+        </button>
+      </div>
     </div>
-  </app-modal>
+  </div>
+
+  <!-- Toast Notification -->
+  <div *ngIf="toastMessage"
+    class="pointer-events-auto fixed bottom-4 right-4 z-[100] w-80 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg backdrop-blur"
+    [class]="toastType === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+          : toastType === 'error' ? 'border-rose-200 bg-rose-50 text-rose-800'
+          : 'border-blue-200 bg-blue-50 text-blue-800'"
+    [attr.role]="toastType === 'error' ? 'alert' : 'status'">
+    {{ toastMessage }}
+  </div>
 </main>

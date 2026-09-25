@@ -6,14 +6,26 @@ import { Subscription } from 'rxjs';
 import {
   OrderService,
   Order,
-  OrderStatus,
-  NEXT_ORDER_STATUSES
+  OrderStatus
 } from '../../services/order.service';
 import { CustomerService, Customer } from '../../services/customers.service';
 import { ProductService, Product } from '../../services/product.service';
-import { ToastService } from '../../services/toast.service';
-import { formatINR } from '../../shared/utils/format';
 import { canManageOrders, canTransitionOrderStatus } from '../../auth/utils/roles';
+
+// Valid transitions enforced by the backend state machine.
+const NEXT_ORDER_STATUSES: Record<OrderStatus, OrderStatus[]> = {
+  ORDER_PLACED: ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED: ['PROCESSING', 'AWAITING_STOCK', 'CANCELLED'],
+  PROCESSING: ['PACKED', 'AWAITING_STOCK', 'CANCELLED'],
+  AWAITING_STOCK: ['SUPPLIER_ORDER_PLACED', 'CANCELLED'],
+  SUPPLIER_ORDER_PLACED: ['STOCK_RECEIVED', 'CANCELLED'],
+  STOCK_RECEIVED: ['PROCESSING'],
+  PACKED: ['SHIPPED'],
+  SHIPPED: ['OUT_FOR_DELIVERY'],
+  OUT_FOR_DELIVERY: ['DELIVERED'],
+  DELIVERED: [],
+  CANCELLED: []
+};
 
 @Component({
   selector: 'app-orders',
@@ -24,6 +36,12 @@ export class OrdersComponent implements OnInit, OnDestroy {
   orders: Order[] = [];
   customers: Customer[] = [];
   products: Product[] = [];
+
+  // Pagination state
+  currentPage = 1;
+  pageSize = 10;
+  total = 0;
+  totalPages = 1;
 
   isLoading = false;
   errorMessage = '';
@@ -36,6 +54,11 @@ export class OrdersComponent implements OnInit, OnDestroy {
   selectedStatus = '';
 
   isSaving = false;
+
+  // Inline toast notifications
+  toastMessage: string | null = null;
+  toastType: 'success' | 'error' | 'info' = 'info';
+  private toastTimer: ReturnType<typeof setTimeout> | undefined;
 
   private subscriptions: Subscription[] = [];
 
@@ -55,8 +78,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
     private router: Router,
     private orderService: OrderService,
     private customerService: CustomerService,
-    private productService: ProductService,
-    private toast: ToastService
+    private productService: ProductService
   ) { }
 
   ngOnInit(): void {
@@ -75,26 +97,63 @@ export class OrdersComponent implements OnInit, OnDestroy {
       : [];
   }
 
+  // Whether the given order can be transitioned (per-row, not selectedOrder)
+  canUpdateOrder(order: Order): boolean {
+    return this.canTransition
+      && (NEXT_ORDER_STATUSES[order.status]?.length ?? 0) > 0;
+  }
+
   loadOrders(): void {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.subscriptions.push(this.orderService.getOrders().subscribe({
-      next: (orders) => {
-        this.orders = orders || [];
-        this.isLoading = false;
-      },
-      error: (error) => {
-        this.isLoading = false;
-        this.errorMessage =
-          error.error?.detail ||
-          'Failed to load orders. The order service may not be available yet.';
-      }
-    }));
+    this.subscriptions.push(
+      this.orderService
+        .getOrders({ page: this.currentPage, pageSize: this.pageSize })
+        .subscribe({
+          next: (response) => {
+            this.orders = response.items || [];
+            this.currentPage = response.page;
+            this.pageSize = response.page_size ?? this.pageSize;
+            this.total = response.total;
+            this.totalPages = response.total_pages;
+            this.isLoading = false;
+          },
+          error: (error) => {
+            this.isLoading = false;
+            this.errorMessage =
+              error.error?.detail ||
+              'Failed to load orders. The order service may not be available yet.';
+          }
+        })
+    );
+  }
+
+  // First visible item number (1-based)
+  get startItem(): number {
+    if (this.total === 0) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  // Last visible item number (1-based)
+  get endItem(): number {
+    return Math.min(this.currentPage * this.pageSize, this.total);
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.loadOrders();
   }
 
   loadCustomers(): void {
-    this.subscriptions.push(this.customerService.getCustomers().subscribe({
+    this.subscriptions.push(this.customerService.getAllCustomers().subscribe({
       next: (customers) => {
         this.customers = customers || [];
         this.customerNames.clear();
@@ -137,11 +196,24 @@ export class OrdersComponent implements OnInit, OnDestroy {
   }
 
   totalInr(order: Order): string {
-    return formatINR(order.total_amount);
+    return this.formatINR(order.total_amount);
   }
 
   subtotalInr(value: string): string {
-    return formatINR(value);
+    return this.formatINR(value);
+  }
+
+  private formatINR(value: number | string | null | undefined): string {
+    const num = Number(value ?? 0);
+
+    if (isNaN(num)) {
+      return '₹0.00';
+    }
+
+    return `₹${num.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
   }
 
   statusClass(status: OrderStatus): string {
@@ -219,12 +291,13 @@ export class OrdersComponent implements OnInit, OnDestroy {
         this.showCreateModal = false;
         this.createForm.reset();
         this.items.clear();
-        this.toast.success('Order created successfully.');
+        this.showToast('success', 'Order created successfully.');
         this.loadOrders();
       },
       error: (error) => {
         this.isSaving = false;
-        this.toast.error(
+        this.showToast(
+          'error',
           error.error?.detail ||
           'Failed to create order.'
         );
@@ -257,7 +330,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
           next: (updated) => {
             this.isSaving = false;
             this.showStatusModal = false;
-            this.toast.success('Order status updated.');
+            this.showToast('success', 'Order status updated.');
             this.selectedOrder = null;
 
             const index = this.orders.findIndex((o) => o.id === updated.id);
@@ -267,7 +340,8 @@ export class OrdersComponent implements OnInit, OnDestroy {
           },
           error: (error) => {
             this.isSaving = false;
-            this.toast.error(
+            this.showToast(
+              'error',
               error.error?.detail ||
               'Failed to update order status.'
             );
@@ -282,7 +356,18 @@ export class OrdersComponent implements OnInit, OnDestroy {
     });
   }
 
+  showToast(type: 'success' | 'error' | 'info', message: string): void {
+    this.toastType = type;
+    this.toastMessage = message;
+
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => {
+      this.toastMessage = null;
+    }, 3500);
+  }
+
   ngOnDestroy(): void {
     this.subscriptions.forEach((s) => s.unsubscribe());
+    clearTimeout(this.toastTimer);
   }
 }

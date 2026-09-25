@@ -125,7 +125,7 @@ export class ProductsFormComponent implements OnInit, OnDestroy {
   // Load categories
   loadCategories(): void {
 
-    this.categoryService.getCategories().subscribe({
+    this.categoryService.getAllCategories().subscribe({
       next: (data: Category[]) => {
         this.categories = data;
       },
@@ -141,7 +141,7 @@ export class ProductsFormComponent implements OnInit, OnDestroy {
   // Load suppliers
   loadSuppliers(): void {
 
-    this.supplierService.getSuppliers().subscribe({
+    this.supplierService.getAllSuppliers().subscribe({
       next: (data: Supplier[]) => {
         this.suppliers = data;
       },

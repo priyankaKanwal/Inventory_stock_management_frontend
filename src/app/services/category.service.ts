@@ -1,11 +1,16 @@
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
 
-import { ApiService } from './api.service';
+import { ApiService, Paginated } from './api.service';
 import { Category } from '../features/categories/categories.component';
 
 export { Category };
+
+export interface CategoryQuery {
+  page?: number;
+  pageSize?: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -16,10 +21,22 @@ export class CategoryService extends ApiService {
     super(http);
   }
 
-  // GET - Get all categories
-  getCategories(): Observable<Category[]> {
-    return this.http.get<Category[]>(
-      this.buildUrl('categories/')
+  // GET - Get categories with server-side pagination
+  getCategories(query: CategoryQuery = {}): Observable<Paginated<Category>> {
+    const params = new HttpParams()
+      .set('page', String(query.page ?? 1))
+      .set('page_size', String(query.pageSize ?? 10));
+
+    return this.http.get<Paginated<Category>>(
+      this.buildUrl('categories/'),
+      { params }
+    );
+  }
+
+  // GET - All categories, across every page
+  getAllCategories(): Observable<Category[]> {
+    return this.fetchAll<Category>((page, pageSize) =>
+      this.getCategories({ page, pageSize })
     );
   }
 

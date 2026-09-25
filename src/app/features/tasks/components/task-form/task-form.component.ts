@@ -114,7 +114,7 @@ export class TaskFormComponent implements OnInit {
       }
     });
 
-    this.categoryService.getCategories().subscribe({
+    this.categoryService.getAllCategories().subscribe({
       next: (categories) => {
         this.categories = categories || [];
       },
@@ -123,7 +123,7 @@ export class TaskFormComponent implements OnInit {
       }
     });
 
-    this.supplierService.getSuppliers().subscribe({
+    this.supplierService.getAllSuppliers().subscribe({
       next: (suppliers) => {
         this.suppliers = suppliers || [];
       },

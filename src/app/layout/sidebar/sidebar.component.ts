@@ -9,10 +9,9 @@ import {
   canViewOrders,
   canViewPredictions,
   canViewProducts,
-  currentRole,
-  isSuperAdmin,
-  roleLabel
+  isSuperAdmin
 } from '../../auth/utils/roles';
+import { clearSession } from '../../auth/utils/session';
 
 @Component({
   selector: 'app-sidebar',
@@ -23,10 +22,39 @@ export class SidebarComponent {
   @Input() isOpen = false;
   @Output() sidebarClosed = new EventEmitter<void>();
 
+  openSections: Record<string, boolean> = {
+    inventory: true,
+    sales: true,
+    ai: true,
+    management: true
+  };
+
   constructor(
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) {
+    this.restoreSections();
+  }
+
+  private restoreSections(): void {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem('sidebar_sections') || '{}'
+      );
+
+      this.openSections = { ...this.openSections, ...saved };
+    } catch {
+      // Ignore corrupted stored state
+    }
+  }
+
+  toggleSection(section: string): void {
+    this.openSections[section] = !this.openSections[section];
+    localStorage.setItem(
+      'sidebar_sections',
+      JSON.stringify(this.openSections)
+    );
+  }
 
   get canViewProducts(): boolean {
     return canViewProducts();
@@ -60,8 +88,24 @@ export class SidebarComponent {
     return isSuperAdmin();
   }
 
-  get roleBadge(): string {
-    return roleLabel(currentRole());
+  get canViewMyTasks(): boolean {
+    return !isSuperAdmin();
+  }
+
+  get canViewInventorySection(): boolean {
+    return canViewProducts() || canManageCategories() || canManageSuppliers();
+  }
+
+  get canViewSalesSection(): boolean {
+    return canViewOrders() || canManageCustomers();
+  }
+
+  get canViewAiSection(): boolean {
+    return canViewPredictions();
+  }
+
+  get canViewManagementSection(): boolean {
+    return canManageTasks() || this.canViewMyTasks || this.canViewUsers;
   }
 
   closeSidebar(): void {
@@ -71,12 +115,12 @@ export class SidebarComponent {
   logout(): void {
     this.authService.logout().subscribe({
       next: () => {
-        this.authService.clearSession();
+        clearSession();
         this.router.navigate(['/login']);
       },
 
       error: () => {
-        this.authService.clearSession();
+        clearSession();
         this.router.navigate(['/login']);
       }
     });

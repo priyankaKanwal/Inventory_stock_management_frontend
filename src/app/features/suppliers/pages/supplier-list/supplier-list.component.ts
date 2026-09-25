@@ -1,9 +1,10 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SupplierService, Supplier } from '../../../../services/supplier.service';
-import { TaskCoverageService } from '../../../../services/task-coverage.service';
+import { Task } from '../../../../services/task.service';
 import { hasFullInventoryAccess } from '../../../../auth/utils/roles';
+import { canEditRecord as canEditByTasks } from '../../../../auth/utils/task-access';
 
 @Component({
   selector: 'app-suppliers-list',
@@ -15,20 +16,54 @@ export class SupplierListComponent implements OnInit, OnDestroy {
   // Suppliers received from parent component
   @Input() suppliers: Supplier[] = [];
 
+  // Tasks received from parent component (staff access gating)
+  @Input() myTasks: Task[] = [];
+
+  // Pagination state from parent component
+  @Input() currentPage = 1;
+  @Input() pageSize = 10;
+  @Input() total = 0;
+  @Input() totalPages = 1;
+
+  // Emitted when the user requests a different page
+  @Output() pageChange = new EventEmitter<number>();
+
   canManage = hasFullInventoryAccess();
 
   constructor(
     private supplierService: SupplierService,
-    private route: ActivatedRoute,
-    private taskCoverage: TaskCoverageService
+    private route: ActivatedRoute
   ) {}
 
   canEditRecord(supplier: Supplier): boolean {
-    return this.canManage || this.taskCoverage.canEdit('SUPPLIER', supplier.id);
+    return this.canManage || canEditByTasks(this.myTasks, 'SUPPLIER', supplier.id);
   }
 
   get showActions(): boolean {
-    return this.canManage || this.suppliers.some((s) => this.taskCoverage.canEdit('SUPPLIER', s.id));
+    return this.canManage || this.suppliers.some((s) => canEditByTasks(this.myTasks, 'SUPPLIER', s.id));
+  }
+
+  // First visible item number (1-based)
+  get startItem(): number {
+    if (this.total === 0) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  // Last visible item number (1-based)
+  get endItem(): number {
+    return Math.min(this.currentPage * this.pageSize, this.total);
+  }
+
+  // Go to a specific page via the pagination controls
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) {
+      return;
+    }
+
+    this.pageChange.emit(page);
   }
 
   // Search values
@@ -49,9 +84,9 @@ export class SupplierListComponent implements OnInit, OnDestroy {
     // Load suppliers if parent has not provided them
     if (!this.suppliers.length) {
 
-      this.supplierService.getSuppliers().subscribe({
-        next: (suppliers) => {
-          this.suppliers = suppliers;
+      this.supplierService.getSuppliers({ page: 1, pageSize: 10 }).subscribe({
+        next: (response) => {
+          this.suppliers = response.items;
         },
 
         error: (error) => {

@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 
-import { ApiService } from './api.service';
+import { ApiService, Paginated } from './api.service';
 
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH';
 export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
@@ -27,9 +26,9 @@ export interface Task {
   assigner_username?: string | null;
 }
 
-export interface TaskFilters {
-  status?: TaskStatus | '';
-  assigned_to?: string | '';
+export interface TaskQuery {
+  page?: number;
+  pageSize?: number;
 }
 
 export type TaskCreatePayload = Pick<
@@ -48,30 +47,36 @@ export class TaskService extends ApiService {
     super(http);
   }
 
-  // GET - Tasks assigned to the current user
-  getMyTasks(): Observable<Task[]> {
-    return this.http.get<{ items: Task[] }>(
-      this.buildUrl('tasks/my')
-    ).pipe(map((response) => response.items));
+  // GET - Current user's tasks, one page
+  getMyTasksPage(query: TaskQuery = {}): Observable<Paginated<Task>> {
+    const params = new HttpParams()
+      .set('page', String(query.page ?? 1))
+      .set('page_size', String(query.pageSize ?? 10));
+
+    return this.http.get<Paginated<Task>>(
+      this.buildUrl('tasks/my'),
+      { params }
+    );
   }
 
-  // GET - Tasks assigned by the current user (managers)
-  getTasks(filters?: TaskFilters): Observable<Task[]> {
-    const params: string[] = [];
+  // GET - Tasks assigned to the current user, across every page
+  // (used for per-record access gating where the full set is needed)
+  getMyTasks(): Observable<Task[]> {
+    return this.fetchAll<Task>((page, pageSize) =>
+      this.getMyTasksPage({ page, pageSize })
+    );
+  }
 
-    if (filters?.status) {
-      params.push(`status=${encodeURIComponent(filters.status)}`);
-    }
+  // GET - Tasks assigned by the current user (managers), one page
+  getTasks(query: TaskQuery = {}): Observable<Paginated<Task>> {
+    const params = new HttpParams()
+      .set('page', String(query.page ?? 1))
+      .set('page_size', String(query.pageSize ?? 10));
 
-    if (filters?.assigned_to) {
-      params.push(`assigned_to=${encodeURIComponent(filters.assigned_to)}`);
-    }
-
-    const query = params.length ? `?${params.join('&')}` : '';
-
-    return this.http.get<{ items: Task[] }>(
-      this.buildUrl(`tasks/${query}`)
-    ).pipe(map((response) => response.items));
+    return this.http.get<Paginated<Task>>(
+      this.buildUrl('tasks/'),
+      { params }
+    );
   }
 
   // GET - Single task

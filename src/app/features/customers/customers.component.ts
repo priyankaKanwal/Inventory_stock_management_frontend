@@ -7,7 +7,6 @@ import {
   Customer,
   CustomerPayload
 } from '../../services/customers.service';
-import { ToastService } from '../../services/toast.service';
 import { canManageCustomers } from '../../auth/utils/roles';
 
 @Component({
@@ -18,12 +17,23 @@ export class CustomersComponent implements OnInit, OnDestroy {
 
   customers: Customer[] = [];
 
+  // Pagination state
+  currentPage = 1;
+  pageSize = 10;
+  total = 0;
+  totalPages = 1;
+
   isLoading = false;
   errorMessage = '';
 
   showFormModal = false;
   editingCustomer: Customer | null = null;
   isSaving = false;
+
+  // Inline toast notifications
+  toastMessage: string | null = null;
+  toastType: 'success' | 'error' | 'info' = 'info';
+  private toastTimer: ReturnType<typeof setTimeout> | undefined;
 
   private subscriptions: Subscription[] = [];
 
@@ -38,8 +48,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
 
   constructor(
     private fb: FormBuilder,
-    private customerService: CustomerService,
-    private toast: ToastService
+    private customerService: CustomerService
   ) { }
 
   ngOnInit(): void {
@@ -50,18 +59,49 @@ export class CustomersComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.subscriptions.push(this.customerService.getCustomers().subscribe({
-      next: (customers) => {
-        this.customers = customers || [];
-        this.isLoading = false;
-      },
-      error: (error) => {
-        this.isLoading = false;
-        this.errorMessage =
-          error.error?.detail ||
-          'Failed to load customers.';
-      }
-    }));
+    this.subscriptions.push(
+      this.customerService
+        .getCustomers({ page: this.currentPage, pageSize: this.pageSize })
+        .subscribe({
+          next: (response) => {
+            this.customers = response.items || [];
+            this.currentPage = response.page;
+            this.pageSize = response.page_size ?? this.pageSize;
+            this.total = response.total;
+            this.totalPages = response.total_pages;
+            this.isLoading = false;
+          },
+          error: (error) => {
+            this.isLoading = false;
+            this.errorMessage =
+              error.error?.detail ||
+              'Failed to load customers.';
+          }
+        })
+    );
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.loadCustomers();
+  }
+
+  // First visible item number (1-based)
+  get startItem(): number {
+    if (this.total === 0) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  // Last visible item number (1-based)
+  get endItem(): number {
+    return Math.min(this.currentPage * this.pageSize, this.total);
   }
 
   initials(name: string): string {
@@ -113,7 +153,8 @@ export class CustomersComponent implements OnInit, OnDestroy {
       next: () => {
         this.isSaving = false;
         this.showFormModal = false;
-        this.toast.success(
+        this.showToast(
+          'success',
           this.editingCustomer
             ? 'Customer updated successfully.'
             : 'Customer created successfully.'
@@ -122,7 +163,8 @@ export class CustomersComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.isSaving = false;
-        this.toast.error(
+        this.showToast(
+          'error',
           error.error?.detail ||
           'Failed to save customer.'
         );
@@ -130,7 +172,18 @@ export class CustomersComponent implements OnInit, OnDestroy {
     }));
   }
 
+  showToast(type: 'success' | 'error' | 'info', message: string): void {
+    this.toastType = type;
+    this.toastMessage = message;
+
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => {
+      this.toastMessage = null;
+    }, 3500);
+  }
+
   ngOnDestroy(): void {
     this.subscriptions.forEach((s) => s.unsubscribe());
+    clearTimeout(this.toastTimer);
   }
 }

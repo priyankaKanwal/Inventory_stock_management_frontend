@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-import { ApiService } from './api.service';
+import { ApiService, Paginated } from './api.service';
 
 export interface Customer {
   id: string;
@@ -16,6 +16,11 @@ export interface Customer {
 
 export type CustomerPayload = Omit<Customer, 'id' | 'created_at' | 'updated_at'>;
 
+export interface CustomerQuery {
+  page?: number;
+  pageSize?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CustomerService extends ApiService {
 
@@ -23,9 +28,20 @@ export class CustomerService extends ApiService {
     super(http);
   }
 
-  getCustomers(): Observable<Customer[]> {
-    return this.http.get<Customer[]>(
-      this.buildUrl('customers/')
+  getCustomers(query: CustomerQuery = {}): Observable<Paginated<Customer>> {
+    const params = new HttpParams()
+      .set('page', String(query.page ?? 1))
+      .set('page_size', String(query.pageSize ?? 10));
+
+    return this.http.get<Paginated<Customer>>(
+      this.buildUrl('customers/'),
+      { params }
+    );
+  }
+
+  getAllCustomers(): Observable<Customer[]> {
+    return this.fetchAll<Customer>((page, pageSize) =>
+      this.getCustomers({ page, pageSize })
     );
   }
 

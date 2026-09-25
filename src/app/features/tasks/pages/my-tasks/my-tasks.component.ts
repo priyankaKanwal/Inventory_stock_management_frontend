@@ -2,7 +2,6 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { TaskService, Task, TaskStatus } from '../../../../services/task.service';
-import { TaskCoverageService } from '../../../../services/task-coverage.service';
 
 @Component({
   selector: 'app-my-tasks',
@@ -12,6 +11,12 @@ export class MyTasksComponent implements OnInit, OnDestroy {
 
   tasks: Task[] = [];
 
+  // Pagination state
+  currentPage = 1;
+  pageSize = 10;
+  total = 0;
+  totalPages = 1;
+
   isLoading = false;
   errorMessage = '';
 
@@ -20,12 +25,10 @@ export class MyTasksComponent implements OnInit, OnDestroy {
   private subscription?: Subscription;
 
   constructor(
-    private taskService: TaskService,
-    private taskCoverage: TaskCoverageService
+    private taskService: TaskService
   ) { }
 
   ngOnInit(): void {
-    this.taskCoverage.reload();
     this.loadTasks();
   }
 
@@ -33,18 +36,47 @@ export class MyTasksComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.subscription = this.taskService.getMyTasks().subscribe({
-      next: (tasks) => {
-        this.tasks = tasks || [];
-        this.isLoading = false;
-      },
-      error: (error) => {
-        this.isLoading = false;
-        this.errorMessage =
-          error.error?.detail ||
-          'Failed to load your tasks. The task service may not be available yet.';
-      }
-    });
+    this.subscription = this.taskService
+      .getMyTasksPage({ page: this.currentPage, pageSize: this.pageSize })
+      .subscribe({
+        next: (response) => {
+          this.tasks = response.items || [];
+          this.currentPage = response.page;
+          this.pageSize = response.page_size ?? this.pageSize;
+          this.total = response.total;
+          this.totalPages = response.total_pages;
+          this.isLoading = false;
+        },
+        error: (error) => {
+          this.isLoading = false;
+          this.errorMessage =
+            error.error?.detail ||
+            'Failed to load your tasks. The task service may not be available yet.';
+        }
+      });
+  }
+
+  // First visible item number (1-based)
+  get startItem(): number {
+    if (this.total === 0) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  // Last visible item number (1-based)
+  get endItem(): number {
+    return Math.min(this.currentPage * this.pageSize, this.total);
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.loadTasks();
   }
 
   statusLabel(status: TaskStatus): string {
@@ -104,7 +136,6 @@ export class MyTasksComponent implements OnInit, OnDestroy {
       next: (updated) => {
         task.status = updated.status;
         this.updatingId = null;
-        this.taskCoverage.reload();
       },
       error: () => {
         this.updatingId = null;

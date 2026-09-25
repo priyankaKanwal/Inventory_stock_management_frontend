@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-import { ApiService } from './api.service';
+import { ApiService, Paginated } from './api.service';
 
 export interface User {
   id: string;
@@ -16,6 +16,11 @@ export interface UserChangeRolePayload {
   role: string;
 }
 
+export type UserQuery = {
+  page?: number;
+  pageSize?: number;
+};
+
 @Injectable({ providedIn: 'root' })
 export class UserService extends ApiService {
 
@@ -23,21 +28,41 @@ export class UserService extends ApiService {
     super(http);
   }
 
-  // GET - List all users (super admin)
-  getUsers(search?: string): Observable<User[]> {
-    const query = search
-      ? `?search=${encodeURIComponent(search)}`
-      : '';
+  // GET - List all users (super admin), paginated
+  getUsers(query: UserQuery = {}): Observable<Paginated<User>> {
+    const params = new HttpParams()
+      .set('page', String(query.page ?? 1))
+      .set('page_size', String(query.pageSize ?? 10));
 
-    return this.http.get<User[]>(
-      this.buildUrl(`users/${query}`)
+    return this.http.get<Paginated<User>>(
+      this.buildUrl('users/'),
+      { params }
     );
   }
 
-  // GET - List current manager's team
-  getUsersTeam(): Observable<User[]> {
-    return this.http.get<User[]>(
-      this.buildUrl('users/team')
+  // GET - All users, across every page
+  getAllUsers(): Observable<User[]> {
+    return this.fetchAll<User>((page, pageSize) =>
+      this.getUsers({ page, pageSize })
+    );
+  }
+
+  // GET - List current manager's team, paginated
+  getUsersTeam(query: UserQuery = {}): Observable<Paginated<User>> {
+    const params = new HttpParams()
+      .set('page', String(query.page ?? 1))
+      .set('page_size', String(query.pageSize ?? 10));
+
+    return this.http.get<Paginated<User>>(
+      this.buildUrl('users/team'),
+      { params }
+    );
+  }
+
+  // GET - Entire current manager's team
+  getAllUsersTeam(): Observable<User[]> {
+    return this.fetchAll<User>((page, pageSize) =>
+      this.getUsersTeam({ page, pageSize })
     );
   }
 

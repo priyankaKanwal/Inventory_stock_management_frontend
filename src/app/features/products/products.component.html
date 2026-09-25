@@ -16,7 +16,7 @@
   <div class="grid gap-3 md:grid-cols-3">
     <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
       <p class="text-xs uppercase tracking-wide text-slate-500">Total Products</p>
-      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ products.length }}</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total }}</p>
     </div>
     <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
       <p class="text-xs uppercase tracking-wide text-slate-500">Low Stock</p>
@@ -32,6 +32,12 @@
     <app-products-list
       class="block h-full w-full"
       [products]="products"
+      [myTasks]="myTasks"
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [total]="total"
+      [totalPages]="totalPages"
+      (pageChange)="goToPage($event)"
     ></app-products-list>
   </section>
 </main>

@@ -5,7 +5,6 @@ import { ReactiveFormsModule } from '@angular/forms';
 
 import { CustomersRoutingModule } from './customers-routing.module';
 import { CustomersComponent } from './customers.component';
-import { ModalComponent } from '../../shared/components/modal/modal.component';
 
 @NgModule({
   declarations: [
@@ -15,8 +14,7 @@ import { ModalComponent } from '../../shared/components/modal/modal.component';
     CommonModule,
     RouterModule,
     ReactiveFormsModule,
-    CustomersRoutingModule,
-    ModalComponent
+    CustomersRoutingModule
   ]
 })
 export class CustomersModule { }

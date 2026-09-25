@@ -8,6 +8,7 @@ import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
 
 import { AuthService } from '../../services/auth.service';
+import { clearSession, getToken, setToken } from '../utils/session';
 
 const AUTH_PATHS = [
   '/auth/login',
@@ -41,7 +42,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
 
   const authEndpoint = isAuthEndpoint(req.url);
-  const token = authService.getToken();
+  const token = getToken();
 
   const authorized = token && !authEndpoint
     ? withBearer(req, token)
@@ -63,7 +64,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         switchMap((response: { access_token: string }) => {
           refreshing = false;
 
-          authService.setToken(response.access_token);
+          setToken(response.access_token);
 
           // Replay the original request with the freshly rotated token.
           return next(withBearer(req, response.access_token));
@@ -71,7 +72,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         catchError((refreshError) => {
           refreshing = false;
 
-          authService.clearSession();
+          clearSession();
           router.navigate(['/login']);
 
           return throwError(() => refreshError);

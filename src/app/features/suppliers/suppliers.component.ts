@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { SupplierService } from '../../services/supplier.service';
-import { TaskCoverageService } from '../../services/task-coverage.service';
-import { hasFullInventoryAccess } from '../../auth/utils/roles';
+import { TaskService, Task } from '../../services/task.service';
+import { hasFullInventoryAccess, isWorker } from '../../auth/utils/roles';
+import { canCreateRecord } from '../../auth/utils/task-access';
 
 //supplier interface
 export interface Supplier {
@@ -26,32 +27,71 @@ export class SuppliersComponent implements OnInit {
   //array to hold suppliers
   suppliers: Supplier[] = [];
 
+  // Pagination state
+  currentPage = 1;
+  pageSize = 10;
+  total = 0;
+  totalPages = 1;
+
+  // My assigned tasks (staff use these for per-record access gating)
+  myTasks: Task[] = [];
+
   canManage = hasFullInventoryAccess();
 
   constructor(
     private supplierService: SupplierService,
-    private taskCoverage: TaskCoverageService
+    private taskService: TaskService
   ) {}
 
   ngOnInit(): void {
-    this.taskCoverage.reload();
+    this.loadMyTasks();
     this.getSuppliers();
   }
 
+  loadMyTasks(): void {
+    if (!isWorker()) {
+      return;
+    }
+
+    this.taskService.getMyTasks().subscribe({
+      next: (tasks) => {
+        this.myTasks = tasks || [];
+      },
+      error: () => {
+        this.myTasks = [];
+      }
+    });
+  }
+
   canCreateType(): boolean {
-    return this.canManage || this.taskCoverage.canCreate('SUPPLIER');
+    return this.canManage || canCreateRecord(this.myTasks, 'SUPPLIER');
   }
 
   // fetch all suppliers
   getSuppliers(): void {
-    this.supplierService.getSuppliers().subscribe({
-      next: (suppliers) => {
-        this.suppliers = suppliers;
-      },
-      error: (error) => {
-        console.error('Error loading suppliers:', error);
-      }
-    });
+    this.supplierService
+      .getSuppliers({ page: this.currentPage, pageSize: this.pageSize })
+      .subscribe({
+        next: (response) => {
+          this.suppliers = response.items;
+          this.currentPage = response.page;
+          this.pageSize = response.page_size ?? this.pageSize;
+          this.total = response.total;
+          this.totalPages = response.total_pages;
+        },
+        error: (error) => {
+          console.error('Error loading suppliers:', error);
+        }
+      });
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.getSuppliers();
   }
 
   // Delete supplier

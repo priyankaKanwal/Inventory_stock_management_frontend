@@ -2,8 +2,9 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { ProductService } from '../../services/product.service';
-import { TaskCoverageService } from '../../services/task-coverage.service';
-import { hasFullInventoryAccess } from '../../auth/utils/roles';
+import { TaskService, Task } from '../../services/task.service';
+import { hasFullInventoryAccess, isWorker } from '../../auth/utils/roles';
+import { canCreateRecord } from '../../auth/utils/task-access';
 
 
 // Product interface
@@ -57,22 +58,40 @@ export class ProductsComponent implements OnInit, OnDestroy {
   // Store subscription so we can unsubscribe later
   private productSubscription?: Subscription;
 
+  // My assigned tasks (staff use these for per-record access gating)
+  myTasks: Task[] = [];
+
   canManage = hasFullInventoryAccess();
 
   constructor(
     private productService: ProductService,
-    private taskCoverage: TaskCoverageService
+    private taskService: TaskService
   ) { }
 
 
   // Component initialization
   ngOnInit(): void {
-    this.taskCoverage.reload();
+    this.loadMyTasks();
     this.getProducts();
   }
 
+  loadMyTasks(): void {
+    if (!isWorker()) {
+      return;
+    }
+
+    this.taskService.getMyTasks().subscribe({
+      next: (tasks) => {
+        this.myTasks = tasks || [];
+      },
+      error: () => {
+        this.myTasks = [];
+      }
+    });
+  }
+
   canCreateType(): boolean {
-    return this.canManage || this.taskCoverage.canCreate('PRODUCT');
+    return this.canManage || canCreateRecord(this.myTasks, 'PRODUCT');
   }
 
 
@@ -108,31 +127,19 @@ export class ProductsComponent implements OnInit, OnDestroy {
   }
 
 
-  //next page
+  // Go to a specific page via the pagination controls
 
-  nextPage(): void {
+  goToPage(page: number): void {
 
-    if (this.currentPage < this.totalPages) {
+    if (page < 1 || page > this.totalPages) {
 
-      this.currentPage++;
-
-      this.getProducts();
+      return;
 
     }
 
-  }
+    this.currentPage = page;
 
-  //previous page
-
-  previousPage(): void {
-
-    if (this.currentPage > 1) {
-
-      this.currentPage--;
-
-      this.getProducts();
-
-    }
+    this.getProducts();
 
   }
 

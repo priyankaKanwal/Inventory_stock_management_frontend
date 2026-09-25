@@ -1,10 +1,11 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { CategoryService } from '../../../../services/category.service';
-import { TaskCoverageService } from '../../../../services/task-coverage.service';
+import { Task } from '../../../../services/task.service';
 import { hasFullInventoryAccess } from '../../../../auth/utils/roles';
+import { canEditRecord as canEditByTasks } from '../../../../auth/utils/task-access';
 import { Category } from '../../categories.component';
 
 
@@ -18,20 +19,54 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
   // Categories received from parent component
   @Input() categories: Category[] = [];
 
+  // Tasks received from parent component (staff access gating)
+  @Input() myTasks: Task[] = [];
+
+  // Pagination state from parent component
+  @Input() currentPage = 1;
+  @Input() pageSize = 10;
+  @Input() total = 0;
+  @Input() totalPages = 1;
+
+  // Emitted when the user requests a different page
+  @Output() pageChange = new EventEmitter<number>();
+
   canManage = hasFullInventoryAccess();
 
   constructor(
     private categoryService: CategoryService,
-    private route: ActivatedRoute,
-    private taskCoverage: TaskCoverageService
+    private route: ActivatedRoute
   ) {}
 
   canEditRecord(category: Category): boolean {
-    return this.canManage || this.taskCoverage.canEdit('CATEGORY', category.id);
+    return this.canManage || canEditByTasks(this.myTasks, 'CATEGORY', category.id);
   }
 
   get showActions(): boolean {
-    return this.canManage || this.categories.some((c) => this.taskCoverage.canEdit('CATEGORY', c.id));
+    return this.canManage || this.categories.some((c) => canEditByTasks(this.myTasks, 'CATEGORY', c.id));
+  }
+
+  // First visible item number (1-based)
+  get startItem(): number {
+    if (this.total === 0) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  // Last visible item number (1-based)
+  get endItem(): number {
+    return Math.min(this.currentPage * this.pageSize, this.total);
+  }
+
+  // Go to a specific page via the pagination controls
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) {
+      return;
+    }
+
+    this.pageChange.emit(page);
   }
 
   // Search values

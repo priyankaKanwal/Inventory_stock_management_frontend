@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CategoryService } from '../../services/category.service';
-import { TaskCoverageService } from '../../services/task-coverage.service';
-import { hasFullInventoryAccess } from '../../auth/utils/roles';
+import { TaskService, Task } from '../../services/task.service';
+import { hasFullInventoryAccess, isWorker } from '../../auth/utils/roles';
+import { canCreateRecord } from '../../auth/utils/task-access';
 
 export interface Category {
   id: string;
@@ -19,31 +20,70 @@ export class CategoriesComponent implements OnInit {
 
   categories: Category[] = [];
 
+  // Pagination state
+  currentPage = 1;
+  pageSize = 10;
+  total = 0;
+  totalPages = 1;
+
+  // My assigned tasks (staff use these for per-record access gating)
+  myTasks: Task[] = [];
+
   canManage = hasFullInventoryAccess();
 
   constructor(
     private categoryService: CategoryService,
-    private taskCoverage: TaskCoverageService
+    private taskService: TaskService
   ) {}
 
   ngOnInit(): void {
-    this.taskCoverage.reload();
+    this.loadMyTasks();
     this.getCategories();
   }
 
+  loadMyTasks(): void {
+    if (!isWorker()) {
+      return;
+    }
+
+    this.taskService.getMyTasks().subscribe({
+      next: (tasks) => {
+        this.myTasks = tasks || [];
+      },
+      error: () => {
+        this.myTasks = [];
+      }
+    });
+  }
+
   canCreateType(): boolean {
-    return this.canManage || this.taskCoverage.canCreate('CATEGORY');
+    return this.canManage || canCreateRecord(this.myTasks, 'CATEGORY');
   }
 
   getCategories(): void {
-    this.categoryService.getCategories().subscribe({
-      next: (response) => {
-        this.categories = response;
-      },
-      error: (error) => {
-        console.error('Error loading categories:', error);
-      }
-    });
+    this.categoryService
+      .getCategories({ page: this.currentPage, pageSize: this.pageSize })
+      .subscribe({
+        next: (response) => {
+          this.categories = response.items;
+          this.currentPage = response.page;
+          this.pageSize = response.page_size ?? this.pageSize;
+          this.total = response.total;
+          this.totalPages = response.total_pages;
+        },
+        error: (error) => {
+          console.error('Error loading categories:', error);
+        }
+      });
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.getCategories();
   }
 
   deleteCategory(id: string): void {

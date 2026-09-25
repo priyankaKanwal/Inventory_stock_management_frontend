@@ -62,16 +62,6 @@
 
         </select>
 
-        <!-- Category Filter -->
-        <select #categorySelect [value]="selectedCategory" (change)="onCategoryChange(categorySelect.value)"
-          aria-label="Filter by category"
-          class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200">
-
-          <option value="All Categories">All Categories</option>
-          <option *ngFor="let category of categoryOptions" [value]="category.id">{{ category.name }}</option>
-
-        </select>
-
       </div>
 
     </div>
@@ -230,81 +220,144 @@
 
   <!-- Footer -->
   <div class="border-t border-slate-200 px-4 py-2">
-    <div class="text-sm text-slate-500">
-      Showing
-      <span class="font-medium text-slate-500">
-        {{ filteredProducts.length }}
-      </span>
-      of
-      <span class="font-medium text-slate-500">
-        {{ products.length }}
-      </span>
-      products
+    <div class="flex flex-col items-center justify-between gap-2 sm:flex-row">
+
+      <div class="text-sm text-slate-500">
+
+        <ng-container *ngIf="total > 0">
+          Showing
+          <span class="font-medium text-slate-500">
+            {{ startItem }}
+          </span>
+          –
+          <span class="font-medium text-slate-500">
+            {{ endItem }}
+          </span>
+          of
+        </ng-container>
+
+        <span class="font-medium text-slate-500">
+          {{ total }}
+        </span>
+        products
+
+      </div>
+
+      <div class="flex items-center gap-2">
+
+        <button
+          type="button"
+          (click)="goToPage(currentPage - 1)"
+          [disabled]="currentPage <= 1 || total === 0"
+          class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Previous
+        </button>
+
+        <span class="px-2 text-sm text-slate-500">
+          Page
+          <span class="font-medium text-slate-500">
+            {{ currentPage }}
+          </span>
+          of
+          <span class="font-medium text-slate-500">
+            {{ totalPages }}
+          </span>
+        </span>
+
+        <button
+          type="button"
+          (click)="goToPage(currentPage + 1)"
+          [disabled]="currentPage >= totalPages || total === 0"
+          class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Next
+        </button>
+
+      </div>
+
     </div>
   </div>
 
   <!-- Stock Adjustment Modal -->
-  <app-modal [isOpen]="adjustProduct !== null" (closeEvent)="closeAdjust()">
-    <ng-container body>
-      <h3 class="text-lg font-semibold text-slate-900">
-        Adjust Stock
-      </h3>
-      <p *ngIf="adjustProduct" class="mt-1 text-sm text-slate-500">
-        {{ adjustProduct.name }} · {{ adjustProduct.sku }} · Current Qty: {{ adjustProduct.quantity_in_stock }}
-      </p>
-
-      <div class="mt-4 grid grid-cols-2 gap-3">
-        <button type="button" (click)="onOperationChange('IN')"
-          [class]="adjustOperation === 'IN' ? 'rounded-xl border border-blue-500 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700' : 'rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors duration-150'">
-          Add (+) Stock
-        </button>
-        <button type="button" (click)="onOperationChange('OUT')"
-          [class]="adjustOperation === 'OUT' ? 'rounded-xl border border-rose-500 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700' : 'rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors duration-150'">
-          Deduct (−) Stock
+  <div *ngIf="adjustProduct !== null" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+    <div class="flex max-h-[90vh] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl bg-white shadow-xl" role="dialog" aria-modal="true" aria-label="Adjust Stock">
+      <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <h2 class="text-lg font-semibold text-slate-900">Adjust Stock</h2>
+        <button type="button" (click)="closeAdjust()" class="rounded-lg p-1 text-slate-400 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400" aria-label="Close dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
         </button>
       </div>
 
-      <form [formGroup]="adjustForm" (ngSubmit)="submitAdjust()" class="mt-4 space-y-4">
-        <input type="hidden" formControlName="operation" />
-
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700" for="adjust-qty">
-            Quantity
-          </label>
-          <input id="adjust-qty" type="number" formControlName="quantity" min="1"
-            class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200" />
-          <p *ngIf="adjustForm.get('quantity')?.invalid && adjustForm.get('quantity')?.touched" class="mt-1 text-xs text-rose-600">
-            Enter a quantity of at least 1.
-          </p>
-        </div>
-
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700" for="adjust-reason">
-            Reason
-          </label>
-          <textarea id="adjust-reason" rows="2" formControlName="reason"
-            placeholder="e.g. Damaged during audit, New supplier delivery"
-            class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"></textarea>
-          <p *ngIf="adjustForm.get('reason')?.invalid && adjustForm.get('reason')?.touched" class="mt-1 text-xs text-rose-600">
-            Provide a reason for this adjustment.
-          </p>
-        </div>
-
-        <p class="text-xs text-slate-400">
-          This will be recorded with the reason and your account for audit purposes.
+      <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <p *ngIf="adjustProduct" class="text-sm text-slate-500">
+          {{ adjustProduct.name }} · {{ adjustProduct.sku }} · Current Qty: {{ adjustProduct.quantity_in_stock }}
         </p>
-      </form>
-    </ng-container>
 
-    <ng-container footer>
-      <button type="button" (click)="closeAdjust()"
-        class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors duration-150">
-        Cancel
-      </button>
-      <button type="button" (click)="submitAdjust()" [disabled]="isAdjusting"
-        class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40">
-        {{ isAdjusting ? 'Saving…' : (adjustOperation === 'IN' ? 'Add Stock' : 'Deduct Stock') }}
-      </button>
-    </ng-container>
-  </app-modal>
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <button type="button" (click)="onOperationChange('IN')"
+            [class]="adjustOperation === 'IN' ? 'rounded-xl border border-blue-500 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700' : 'rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors duration-150'">
+            Add (+) Stock
+          </button>
+          <button type="button" (click)="onOperationChange('OUT')"
+            [class]="adjustOperation === 'OUT' ? 'rounded-xl border border-rose-500 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700' : 'rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors duration-150'">
+            Deduct (−) Stock
+          </button>
+        </div>
+
+        <form [formGroup]="adjustForm" (ngSubmit)="submitAdjust()" class="mt-4 space-y-4">
+          <input type="hidden" formControlName="operation" />
+
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700" for="adjust-qty">
+              Quantity
+            </label>
+            <input id="adjust-qty" type="number" formControlName="quantity" min="1"
+              class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200" />
+            <p *ngIf="adjustForm.get('quantity')?.invalid && adjustForm.get('quantity')?.touched" class="mt-1 text-xs text-rose-600">
+              Enter a quantity of at least 1.
+            </p>
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700" for="adjust-reason">
+              Reason
+            </label>
+            <textarea id="adjust-reason" rows="2" formControlName="reason"
+              placeholder="e.g. Damaged during audit, New supplier delivery"
+              class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"></textarea>
+            <p *ngIf="adjustForm.get('reason')?.invalid && adjustForm.get('reason')?.touched" class="mt-1 text-xs text-rose-600">
+              Provide a reason for this adjustment.
+            </p>
+          </div>
+
+          <p class="text-xs text-slate-400">
+            This will be recorded with the reason and your account for audit purposes.
+          </p>
+        </form>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
+        <button type="button" (click)="closeAdjust()"
+          class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors duration-150">
+          Cancel
+        </button>
+        <button type="button" (click)="submitAdjust()" [disabled]="isAdjusting"
+          class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40">
+          {{ isAdjusting ? 'Saving…' : (adjustOperation === 'IN' ? 'Add Stock' : 'Deduct Stock') }}
+        </button>
+      </div>
+    </div>
+  </div>
+<!-- Toast Notification -->
+  <div *ngIf="toastMessage"
+    class="pointer-events-auto fixed bottom-4 right-4 z-[100] w-80 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg backdrop-blur"
+    [class]="toastType === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+          : toastType === 'error' ? 'border-rose-200 bg-rose-50 text-rose-800'
+          : 'border-blue-200 bg-blue-50 text-blue-800'"
+    [attr.role]="toastType === 'error' ? 'alert' : 'status'">
+    {{ toastMessage }}
+  </div>
 </section>

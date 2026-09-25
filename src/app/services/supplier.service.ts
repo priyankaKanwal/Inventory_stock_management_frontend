@@ -1,10 +1,15 @@
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ApiService } from './api.service';
+import { ApiService, Paginated } from './api.service';
 import { Supplier } from '../features/suppliers/suppliers.component';
-import { HttpClient } from '@angular/common/http';
 
 export { Supplier };
+
+export interface SupplierQuery {
+  page?: number;
+  pageSize?: number;
+}
 
 
 @Injectable({ providedIn: 'root' })
@@ -14,11 +19,25 @@ export class SupplierService extends ApiService {
    constructor(http: HttpClient) {
       super(http);
     }
-    
 
-    //fetch all suppliers
-  getSuppliers(): Observable<Supplier[]> {
-    return this.http.get<Supplier[]>(this.buildUrl(`suppliers/`));
+
+    //fetch all suppliers (paginated)
+  getSuppliers(query: SupplierQuery = {}): Observable<Paginated<Supplier>> {
+    const params = new HttpParams()
+      .set('page', String(query.page ?? 1))
+      .set('page_size', String(query.pageSize ?? 10));
+
+    return this.http.get<Paginated<Supplier>>(
+      this.buildUrl('suppliers/'),
+      { params }
+    );
+  }
+
+  //fetch every supplier, across all pages
+  getAllSuppliers(): Observable<Supplier[]> {
+    return this.fetchAll<Supplier>((page, pageSize) =>
+      this.getSuppliers({ page, pageSize })
+    );
   }
 
   //fetch a single supplier by ID

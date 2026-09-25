@@ -16,7 +16,7 @@
   <div class="grid gap-3 md:grid-cols-3">
     <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
       <p class="text-xs uppercase tracking-wide text-slate-500">Total Categories</p>
-      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ categories.length }}</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total }}</p>
     </div>
   </div>
 
@@ -24,6 +24,12 @@
     <app-categories-list
       class="block h-full w-full"
       [categories]="categories"
+      [myTasks]="myTasks"
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [total]="total"
+      [totalPages]="totalPages"
+      (pageChange)="goToPage($event)"
     ></app-categories-list>
   </section>
 </main>

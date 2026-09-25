@@ -22,7 +22,7 @@
     {{ successMessage }}
   </p>
 
-  <section class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+  <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <div class="border-b border-slate-200 px-4 py-3 sm:px-6">
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <h2 class="text-lg font-semibold text-slate-900">Users</h2>
@@ -53,7 +53,7 @@
     </div>
 
     <!-- Table -->
-    <div class="min-h-0 flex-1 overflow-x-auto">
+    <div class="min-h-0 flex-1 overflow-auto scrollbar-thin">
       <table class="min-w-full divide-y divide-slate-200 text-center">
         <thead class="bg-slate-50 text-sm text-slate-600">
           <tr>
@@ -84,6 +84,48 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="!isLoading && total > 0" class="border-t border-slate-200 px-4 py-2 sm:px-6">
+      <div class="flex flex-col items-center justify-between gap-2 sm:flex-row">
+        <div class="text-sm text-slate-500">
+          Showing
+          <span class="font-medium text-slate-500">{{ startItem }}</span>
+          –
+          <span class="font-medium text-slate-500">{{ endItem }}</span>
+          of
+          <span class="font-medium text-slate-500">{{ total }}</span>
+          users
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="goToPage(currentPage - 1)"
+            [disabled]="currentPage <= 1"
+            class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Previous
+          </button>
+
+          <span class="px-2 text-sm text-slate-500">
+            Page
+            <span class="font-medium text-slate-500">{{ currentPage }}</span>
+            of
+            <span class="font-medium text-slate-500">{{ totalPages }}</span>
+          </span>
+
+          <button
+            type="button"
+            (click)="goToPage(currentPage + 1)"
+            [disabled]="currentPage >= totalPages"
+            class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   </section>
 </main>

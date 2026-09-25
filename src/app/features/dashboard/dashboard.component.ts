@@ -4,7 +4,6 @@ import { DashboardService } from '../../services/dashboard.service';
 import { TaskService, Task } from '../../services/task.service';
 import { OrderService, Order } from '../../services/order.service';
 import { CustomerService, Customer } from '../../services/customers.service';
-import { formatINR } from '../../shared/utils/format';
 import { canViewOrders } from '../../auth/utils/roles';
 
 export interface DashboardSummary {
@@ -75,7 +74,7 @@ export class DashboardComponent implements OnInit {
   }
 
   loadCustomers(): void {
-    this.customerService.getCustomers().subscribe({
+    this.customerService.getAllCustomers().subscribe({
       next: (customers) => {
         this.customerNames.clear();
         (customers || []).forEach((c: Customer) => {
@@ -93,9 +92,9 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    this.orderService.getOrders().subscribe({
-      next: (orders) => {
-        this.orders = (orders || []).slice(0, 5);
+    this.orderService.getOrders({ page: 1, pageSize: 5 }).subscribe({
+      next: (response) => {
+        this.orders = (response.items || []).slice(0, 5);
       },
       error: () => {
         this.orders = [];
@@ -108,11 +107,24 @@ export class DashboardComponent implements OnInit {
   }
 
   totalInr(order: Order): string {
-    return formatINR(order.total_amount);
+    return this.formatINR(order.total_amount);
   }
 
   stockValueInr(): string {
-    return this.summary ? formatINR(this.summary.total_stock_value) : '₹0.00';
+    return this.summary ? this.formatINR(this.summary.total_stock_value) : '₹0.00';
+  }
+
+  private formatINR(value: number | string | null | undefined): string {
+    const num = Number(value ?? 0);
+
+    if (isNaN(num)) {
+      return '₹0.00';
+    }
+
+    return `₹${num.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
   }
 
   statusClass(status: string): string {

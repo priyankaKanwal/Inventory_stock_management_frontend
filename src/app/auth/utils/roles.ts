@@ -78,7 +78,7 @@ export function isStaff(): boolean {
 }
 
 // Staff roles have narrow portfolio-wide permissions and are gated per-record
-// by their assigned tasks (see TaskCoverageService).
+// by their assigned tasks (see the task-access util).
 export function isWorker(): boolean {
   return isStaff();
 }

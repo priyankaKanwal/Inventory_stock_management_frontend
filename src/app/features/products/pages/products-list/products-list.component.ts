@@ -1,13 +1,12 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CategoryService } from '../../../../services/category.service';
 import { SupplierService } from '../../../../services/supplier.service';
 import { ProductService } from '../../../../services/product.service';
-import { TaskCoverageService } from '../../../../services/task-coverage.service';
-import { ToastService } from '../../../../services/toast.service';
+import { Task } from '../../../../services/task.service';
 import { hasFullInventoryAccess } from '../../../../auth/utils/roles';
-import { formatINR } from '../../../../shared/utils/format';
+import { canEditRecord as canEditByTasks } from '../../../../auth/utils/task-access';
 import { Product } from '../../products.component';
 import { Category } from '../../../categories/categories.component';
 import { Supplier } from '../../../suppliers/suppliers.component';
@@ -23,7 +22,24 @@ export class ProductsListComponent implements OnInit {
   // Products received from ProductsComponent
   @Input() products: Product[] = [];
 
+  // Tasks received from ProductsComponent (staff access gating)
+  @Input() myTasks: Task[] = [];
+
+  // Pagination state from ProductsComponent
+  @Input() currentPage = 1;
+  @Input() pageSize = 10;
+  @Input() total = 0;
+  @Input() totalPages = 1;
+
+  // Emitted when the user requests a different page
+  @Output() pageChange = new EventEmitter<number>();
+
   canManage = hasFullInventoryAccess();
+
+  // Inline toast notifications
+  toastMessage: string | null = null;
+  toastType: 'success' | 'error' | 'info' = 'info';
+  private toastTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Stock adjustment modal state
   adjustProduct: Product | null = null;
@@ -41,23 +57,19 @@ export class ProductsListComponent implements OnInit {
     private supplierService: SupplierService,
     private productService: ProductService,
     private route: ActivatedRoute,
-    private taskCoverage: TaskCoverageService,
-    private fb: FormBuilder,
-    private toast: ToastService
+    private fb: FormBuilder
   ) { }
 
   canEditRecord(product: Product): boolean {
-    return this.canManage || this.taskCoverage.canEdit('PRODUCT', product.id);
+    return this.canManage || canEditByTasks(this.myTasks, 'PRODUCT', product.id);
   }
 
   get showActions(): boolean {
-    return this.canManage || this.products.some((p) => this.taskCoverage.canEdit('PRODUCT', p.id));
+    return this.canManage || this.products.some((p) => canEditByTasks(this.myTasks, 'PRODUCT', p.id));
   }
 
   // Search / Filter
   selectedStatus = 'All Status';
-
-  selectedCategory = 'All Categories';
 
   searchQuery = '';
 
@@ -72,9 +84,6 @@ export class ProductsListComponent implements OnInit {
   private supplierNames =
     new Map<string, string>();
 
-  // Dropdown options for the category filter
-  categoryOptions: { id: string; name: string }[] = [];
-
   ngOnInit(): void {
 
     // Get search value from URL
@@ -85,14 +94,14 @@ export class ProductsListComponent implements OnInit {
 
     });
 
-    // Get categories
+    // Get categories (all pages, needed for name lookups)
     this.categoryService
-      .getCategories()
+      .getAllCategories()
       .subscribe({
 
         next: (categories: Category[]) => {
 
-          this.categoryOptions = [];
+          this.categoryNames = new Map<string, string>();
 
           categories.forEach((category) => {
 
@@ -100,11 +109,6 @@ export class ProductsListComponent implements OnInit {
               category.id,
               category.name
             );
-
-            this.categoryOptions.push({
-              id: category.id,
-              name: category.name
-            });
 
           });
 
@@ -122,9 +126,9 @@ export class ProductsListComponent implements OnInit {
       });
 
 
-    // Get suppliers  
+    // Get suppliers (all pages, needed for name lookups)
     this.supplierService
-      .getSuppliers()
+      .getAllSuppliers()
       .subscribe({
 
         next: (suppliers: Supplier[]) => {
@@ -180,15 +184,6 @@ export class ProductsListComponent implements OnInit {
 
       });
 
-    }
-
-    //filter by category
-    if (
-      this.selectedCategory !== 'All Categories'
-    ) {
-      result = result.filter((product) => {
-        return product.category_id === this.selectedCategory;
-      });
     }
 
     //search query filter
@@ -455,16 +450,63 @@ export class ProductsListComponent implements OnInit {
     this.selectedStatus = status;
   }
 
-  //category filter change
+  // Go to a specific page via the pagination controls
 
-  onCategoryChange(categoryId: string): void {
-    this.selectedCategory = categoryId;
+  goToPage(page: number): void {
+
+    if (
+      page < 1 ||
+      page > this.totalPages ||
+      page === this.currentPage
+    ) {
+
+      return;
+
+    }
+
+    this.pageChange.emit(page);
+
+  }
+
+  // First visible product number (1-based)
+
+  get startItem(): number {
+
+    if (this.total === 0) {
+
+      return 0;
+
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+
+  }
+
+  // Last visible product number (1-based)
+
+  get endItem(): number {
+
+    return Math.min(this.currentPage * this.pageSize, this.total);
+
   }
 
   //format price as INR
 
   formatPrice(value: number): string {
-    return formatINR(value);
+    return this.formatINR(value);
+  }
+
+  private formatINR(value: number | string | null | undefined): string {
+    const num = Number(value ?? 0);
+
+    if (isNaN(num)) {
+      return '₹0.00';
+    }
+
+    return `₹${num.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
   }
 
   //open stock adjustment modal for a product
@@ -487,6 +529,16 @@ export class ProductsListComponent implements OnInit {
   closeAdjust(): void {
     this.adjustProduct = null;
     this.isAdjusting = false;
+  }
+
+  showToast(type: 'success' | 'error' | 'info', message: string): void {
+    this.toastType = type;
+    this.toastMessage = message;
+
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => {
+      this.toastMessage = null;
+    }, 3500);
   }
 
   submitAdjust(): void {
@@ -520,7 +572,8 @@ export class ProductsListComponent implements OnInit {
           this.products[index] = updated;
         }
 
-        this.toast.success(
+        this.showToast(
+          'success',
           operation === 'IN'
             ? 'Stock added successfully.'
             : 'Stock deducted successfully.'
@@ -530,7 +583,8 @@ export class ProductsListComponent implements OnInit {
       },
       error: (error) => {
         this.isAdjusting = false;
-        this.toast.error(
+        this.showToast(
+          'error',
           error.error?.detail ||
           'Failed to adjust stock.'
         );

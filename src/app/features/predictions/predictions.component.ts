@@ -10,7 +10,6 @@ import {
 } from '../../services/prediction.service';
 import { OrderService, Order } from '../../services/order.service';
 import { CustomerService, Customer } from '../../services/customers.service';
-import { formatDate } from '../../shared/utils/format';
 
 @Component({
   selector: 'app-predictions',
@@ -74,7 +73,7 @@ export class PredictionsComponent implements OnInit, OnDestroy {
   }
 
   loadOrders(): void {
-    this.subscriptions.push(this.orderService.getOrders().subscribe({
+    this.subscriptions.push(this.orderService.getAllOrders().subscribe({
       next: (orders) => {
         this.orders = orders || [];
       },
@@ -85,7 +84,7 @@ export class PredictionsComponent implements OnInit, OnDestroy {
   }
 
   loadCustomers(): void {
-    this.subscriptions.push(this.customerService.getCustomers().subscribe({
+    this.subscriptions.push(this.customerService.getAllCustomers().subscribe({
       next: (customers) => {
         this.customers = customers || [];
         this.customerNames.clear();
@@ -194,7 +193,26 @@ export class PredictionsComponent implements OnInit, OnDestroy {
   }
 
   formatPredictionDate(): string {
-    return this.result ? formatDate(this.result.predicted_delivery_date) : '—';
+    return this.result ? this.formatDate(this.result.predicted_delivery_date) : '—';
+  }
+
+  private formatDate(value: string | null | undefined): string {
+    if (!value) {
+      return '—';
+    }
+
+    const date = new Date(value);
+
+    if (isNaN(date.getTime())) {
+      return value;
+    }
+
+    return date.toLocaleDateString('en-IN', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   }
 
   ngOnDestroy(): void {

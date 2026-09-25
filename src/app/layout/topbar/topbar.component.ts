@@ -63,7 +63,7 @@ export class TopbarComponent implements OnInit {
     });
 
     // Get suppliers
-    this.supplierService.getSuppliers().subscribe({
+    this.supplierService.getAllSuppliers().subscribe({
       next: (suppliers) => {
         this.suppliers = suppliers.map((s) => ({
           id: s.id,
@@ -77,7 +77,7 @@ export class TopbarComponent implements OnInit {
     });
 
     // Get categories
-    this.categoryService.getCategories().subscribe({
+    this.categoryService.getAllCategories().subscribe({
       next: (categories) => {
         this.categories = categories.map((c) => ({
           id: c.id,
