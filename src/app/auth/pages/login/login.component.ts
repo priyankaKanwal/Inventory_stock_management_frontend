@@ -1,12 +1,8 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
-import { AuthService } from '../../../services/auth.service';
-
-interface LoginRequest {
-  email: string;
-  password: string;
-}
+import { AuthService, LoginRequest } from '../../../services/auth.service';
+import { clearSession, startSession } from '../../utils/auth-state';
 
 @Component({
   selector: 'app-login',
@@ -18,16 +14,31 @@ export class LoginComponent {
   password = '';
 
   errorMessage = '';
+  noticeMessage = '';
   isLoading = false;
+
+  // Set when the user is bounced here by the auth layer rather than by
+  // submitting the form themselves.
+  private static readonly NOTICES: Record<string, string> = {
+    'role-changed':
+      'Your own role was changed. Please sign in again to apply it.',
+    'session-changed':
+      'Your session is no longer valid. Please sign in again.'
+  };
 
   constructor(
     private authService: AuthService,
-    private router: Router
-  ) { }
+    private router: Router,
+    private route: ActivatedRoute
+  ) {
+    this.noticeMessage =
+      LoginComponent.NOTICES[this.route.snapshot.queryParamMap.get('reason') ?? ''] ?? '';
+  }
 
   onSubmit(): void {
 
     this.errorMessage = '';
+    this.noticeMessage = '';
 
     if (!this.email || !this.password) {
       this.errorMessage = 'Email and password are required.';
@@ -45,36 +56,27 @@ export class LoginComponent {
 
       next: (response) => {
 
-        // Save access token
-        localStorage.setItem(
-          'access_token',
-          response.access_token
+        // The role comes from the backend and is accepted only if it is one
+        // of the known AppRole values; anything else writes nothing and fails
+        // the login. The access token is persisted because the HTTP
+        // interceptor needs it to survive a reload.
+        const started = startSession(
+          response.access_token,
+          response.role,
+          response.username,
+          response.user_id
         );
 
-        // Save role
-        localStorage.setItem(
-          'role',
-          response.role.toUpperCase()
-        );
-
-        // Save username
-        localStorage.setItem(
-          'username',
-          response.username
-        );
-
-        // Save user id (when provided by the backend)
-        if (response.user_id) {
-          localStorage.setItem(
-            'user_id',
-            String(response.user_id)
-          );
+        if (!started) {
+          this.isLoading = false;
+          this.errorMessage =
+            'Login response was missing a valid access token or role.';
+          return;
         }
 
         this.isLoading = false;
 
-        // Go to dashboard
-        this.router.navigate(['/dashboard']);
+        this.router.navigateByUrl(this.returnUrl());
       },
 
       error: (error) => {
@@ -88,12 +90,23 @@ export class LoginComponent {
     });
   }
 
+  // Falls back to the dashboard when the guard did not record where the user
+  // was originally heading. Only same-origin paths are honoured so a crafted
+  // returnUrl cannot bounce the user to another site.
+  private returnUrl(): string {
+
+    const target = this.route.snapshot.queryParamMap.get('returnUrl');
+
+    if (!target || !target.startsWith('/') || target.startsWith('//')) {
+      return '/dashboard';
+    }
+
+    return target;
+  }
+
   logout(): void {
 
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('username');
+    clearSession();
 
     this.router.navigate(['/login']);
   }

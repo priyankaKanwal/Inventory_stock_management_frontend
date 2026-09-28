@@ -61,7 +61,9 @@ export class ProductsComponent implements OnInit, OnDestroy {
   // My assigned tasks (staff use these for per-record access gating)
   myTasks: Task[] = [];
 
-  canManage = hasFullInventoryAccess();
+  get canManage(): boolean {
+    return hasFullInventoryAccess();
+  }
 
   constructor(
     private productService: ProductService,

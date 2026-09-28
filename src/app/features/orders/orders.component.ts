@@ -61,9 +61,13 @@ export class OrdersComponent implements OnInit, OnDestroy {
   private toastTimer: ReturnType<typeof setTimeout> | undefined;
 
   private subscriptions: Subscription[] = [];
+  get canManage(): boolean {
+    return canManageOrders();
+  }
 
-  canManage = canManageOrders();
-  canTransition = canTransitionOrderStatus();
+  get canTransition(): boolean {
+    return canTransitionOrderStatus();
+  }
 
   createForm = this.fb.group({
     customer_id: ['', Validators.required],

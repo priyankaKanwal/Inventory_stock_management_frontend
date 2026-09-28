@@ -28,7 +28,9 @@ export class SupplierListComponent implements OnInit, OnDestroy {
   // Emitted when the user requests a different page
   @Output() pageChange = new EventEmitter<number>();
 
-  canManage = hasFullInventoryAccess();
+  get canManage(): boolean {
+    return hasFullInventoryAccess();
+  }
 
   constructor(
     private supplierService: SupplierService,

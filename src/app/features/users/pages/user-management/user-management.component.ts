@@ -1,8 +1,10 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { UserService, User } from '../../../../services/user.service';
 import { ALL_ROLES, AppRole } from '../../../../auth/utils/roles';
+import { clearSession, currentUser } from '../../../../auth/utils/auth-state';
 
 @Component({
   selector: 'app-user-management',
@@ -30,7 +32,8 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = [];
 
   constructor(
-    private userService: UserService
+    private userService: UserService,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -117,8 +120,8 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     return 'rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700';
   }
 
-  changeRole(user: User, role: string): void {
-    if (!role || role === user.role) {
+  changeRole(user: User, role: AppRole): void {
+    if (role === user.role) {
       return;
     }
 
@@ -139,6 +142,18 @@ export class UserManagementComponent implements OnInit, OnDestroy {
         this.updatingId = null;
         user.role = updated.role;
         this.successMessage = `Role updated for ${user.username}.`;
+
+        // The signed-in user just changed their own role, so the current token
+        // no longer describes them. Sign out rather than leave the UI showing
+        // permissions the token does not carry. POST /auth/logout is skipped on
+        // purpose: the token is already stale against the new role, so it can
+        // 401 and drag the refresh path in behind it.
+        if (this.isCurrentUser(user)) {
+          clearSession();
+          this.router.navigate(['/login'], {
+            queryParams: { reason: 'role-changed' }
+          });
+        }
       },
       error: (error) => {
         this.updatingId = null;
@@ -147,6 +162,21 @@ export class UserManagementComponent implements OnInit, OnDestroy {
           'Failed to change role.';
       }
     }));
+  }
+
+  private isCurrentUser(user: User): boolean {
+
+    const active = currentUser();
+
+    if (!active) {
+      return false;
+    }
+
+    if (active.user_id) {
+      return active.user_id === user.id;
+    }
+
+    return active.username.toLowerCase() === (user.username || '').toLowerCase();
   }
 
   ngOnDestroy(): void {

@@ -3,17 +3,20 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { ApiService, Paginated } from './api.service';
+import { AppRole } from '../auth/utils/roles';
 
 export interface User {
   id: string;
   username: string;
   email: string;
+  // Inbound from the backend, so it is not narrowed to AppRole here: the value
+  // is only used for display and comparison, never to grant access.
   role: string;
   created_at?: string | null;
 }
 
 export interface UserChangeRolePayload {
-  role: string;
+  role: AppRole;
 }
 
 export type UserQuery = {
@@ -67,7 +70,7 @@ export class UserService extends ApiService {
   }
 
   // PATCH - Change a user's role (super admin)
-  changeRole(id: string, role: string): Observable<User> {
+  changeRole(id: string, role: AppRole): Observable<User> {
     return this.http.patch<User>(
       this.buildUrl(`users/${id}/role`),
       { role } as UserChangeRolePayload

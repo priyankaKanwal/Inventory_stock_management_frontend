@@ -9,9 +9,10 @@ import {
   canViewOrders,
   canViewPredictions,
   canViewProducts,
+  currentRole,
   isSuperAdmin
 } from '../../auth/utils/roles';
-import { clearSession } from '../../auth/utils/session';
+import { clearSession } from '../../auth/utils/auth-state';
 
 @Component({
   selector: 'app-sidebar',
@@ -88,8 +89,11 @@ export class SidebarComponent {
     return isSuperAdmin();
   }
 
+  // Intentionally the one negated rule: super admin does not get My Tasks.
+  // The role check keeps it false when nobody is signed in, since every other
+  // permission here fails closed on a null role.
   get canViewMyTasks(): boolean {
-    return !isSuperAdmin();
+    return currentRole() !== null && !isSuperAdmin();
   }
 
   get canViewInventorySection(): boolean {

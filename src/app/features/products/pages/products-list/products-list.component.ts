@@ -34,7 +34,9 @@ export class ProductsListComponent implements OnInit {
   // Emitted when the user requests a different page
   @Output() pageChange = new EventEmitter<number>();
 
-  canManage = hasFullInventoryAccess();
+  get canManage(): boolean {
+    return hasFullInventoryAccess();
+  }
 
   // Inline toast notifications
   toastMessage: string | null = null;

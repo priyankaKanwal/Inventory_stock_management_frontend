@@ -29,7 +29,9 @@ export class CategoriesComponent implements OnInit {
   // My assigned tasks (staff use these for per-record access gating)
   myTasks: Task[] = [];
 
-  canManage = hasFullInventoryAccess();
+  get canManage(): boolean {
+    return hasFullInventoryAccess();
+  }
 
   constructor(
     private categoryService: CategoryService,

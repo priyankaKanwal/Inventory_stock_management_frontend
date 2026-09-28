@@ -37,7 +37,9 @@ export class CustomersComponent implements OnInit, OnDestroy {
 
   private subscriptions: Subscription[] = [];
 
-  canManage = canManageCustomers();
+  get canManage(): boolean {
+    return canManageCustomers();
+  }
 
   form = this.fb.group({
     name: ['', Validators.required],

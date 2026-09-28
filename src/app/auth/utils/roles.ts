@@ -1,33 +1,28 @@
-export type AppRole =
-  | 'SUPER_ADMIN'
-  | 'INVENTORY_MANAGER'
-  | 'ORDER_MANAGER'
-  | 'INVENTORY_STAFF'
-  | 'ORDER_STAFF';
-
-export const SUPER_ADMIN_ROLE: AppRole = 'SUPER_ADMIN';
-export const INVENTORY_MANAGER_ROLE: AppRole = 'INVENTORY_MANAGER';
-export const ORDER_MANAGER_ROLE: AppRole = 'ORDER_MANAGER';
-export const INVENTORY_STAFF_ROLE: AppRole = 'INVENTORY_STAFF';
-export const ORDER_STAFF_ROLE: AppRole = 'ORDER_STAFF';
-
-export const ALL_ROLES: AppRole[] = [
-  SUPER_ADMIN_ROLE,
+import { currentUser } from './auth-state';
+import {
+  ALL_ROLES,
+  AppRole,
   INVENTORY_MANAGER_ROLE,
+  INVENTORY_STAFF_ROLE,
+  MANAGER_ROLES,
   ORDER_MANAGER_ROLE,
-  INVENTORY_STAFF_ROLE,
-  ORDER_STAFF_ROLE
-];
+  ORDER_STAFF_ROLE,
+  STAFF_ROLES,
+  SUPER_ADMIN_ROLE
+} from './role-model';
 
-export const MANAGER_ROLES: AppRole[] = [
+export {
+  ALL_ROLES,
+  AppRole,
   INVENTORY_MANAGER_ROLE,
-  ORDER_MANAGER_ROLE
-];
-
-export const STAFF_ROLES: AppRole[] = [
   INVENTORY_STAFF_ROLE,
-  ORDER_STAFF_ROLE
-];
+  MANAGER_ROLES,
+  ORDER_MANAGER_ROLE,
+  ORDER_STAFF_ROLE,
+  STAFF_ROLES,
+  SUPER_ADMIN_ROLE,
+  parseRole
+} from './role-model';
 
 export const ROUTE_ROLES: Record<string, AppRole[]> = {
   superAdmin: [SUPER_ADMIN_ROLE],
@@ -39,14 +34,15 @@ export const ROUTE_ROLES: Record<string, AppRole[]> = {
   everyone: ALL_ROLES
 };
 
-export function currentRole(): AppRole {
-  return (
-    (localStorage.getItem('role') || 'ORDER_STAFF').toUpperCase() as AppRole
-  );
+export function currentRole(): AppRole | null {
+  return currentUser()?.role ?? null;
 }
 
 export function hasRoles(...roles: AppRole[]): boolean {
-  return roles.includes(currentRole());
+
+  const role = currentRole();
+
+  return role !== null && roles.includes(role);
 }
 
 export function isSuperAdmin(): boolean {

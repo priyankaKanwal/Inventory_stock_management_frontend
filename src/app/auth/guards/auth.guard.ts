@@ -1,24 +1,18 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn, Router, RouterStateSnapshot } from '@angular/router';
 
-export const authGuard: CanActivateFn = () => {
+import { getAccessToken } from '../utils/auth-state';
+
+export const authGuard: CanActivateFn = (route, state) => {
 
   const router = inject(Router);
 
-  const token = localStorage.getItem('access_token');
-
-  console.log('AUTH GUARD - Token:', token);
-
-  if (token) {
-
-    console.log('AUTH GUARD - Access allowed');
-
+  if (getAccessToken()) {
     return true;
   }
 
-  console.log(
-    'AUTH GUARD - No token, redirecting to login'
-  );
-
-  return router.createUrlTree(['/login']);
+  // Preserve where the user was heading so login can send them back.
+  return router.createUrlTree(['/login'], {
+    queryParams: { returnUrl: state.url }
+  });
 };

@@ -36,7 +36,9 @@ export class SuppliersComponent implements OnInit {
   // My assigned tasks (staff use these for per-record access gating)
   myTasks: Task[] = [];
 
-  canManage = hasFullInventoryAccess();
+  get canManage(): boolean {
+    return hasFullInventoryAccess();
+  }
 
   constructor(
     private supplierService: SupplierService,

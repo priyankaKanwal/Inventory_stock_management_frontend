@@ -4,6 +4,24 @@ import { Observable } from 'rxjs';
 
 import { ApiService } from './api.service';
 
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+// `role` stays a plain string here on purpose: it is whatever the backend sent
+// and is only narrowed to an AppRole by parseRole() inside startSession().
+export interface LoginResponse {
+  access_token: string;
+  role: string;
+  username: string;
+  user_id?: string;
+}
+
+export interface RefreshResponse {
+  access_token: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -13,8 +31,8 @@ export class AuthService extends ApiService {
     super(http);
   }
 
-  login(data: any): Observable<any> {
-    return this.http.post<any>(
+  login(data: LoginRequest): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(
       this.buildUrl('auth/login'),
       data,
       {
@@ -32,8 +50,8 @@ export class AuthService extends ApiService {
   }
 
   // Refresh token API
-  refreshToken(): Observable<any> {
-    return this.http.post(
+  refreshToken(): Observable<RefreshResponse> {
+    return this.http.post<RefreshResponse>(
       this.buildUrl('auth/refresh'),
       {},
       {

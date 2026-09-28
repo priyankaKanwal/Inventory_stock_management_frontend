@@ -27,7 +27,9 @@ export class DashboardComponent implements OnInit {
   isLoading = true;
   errorMessage = '';
 
-  canViewOrdersSection = canViewOrders();
+  get canViewOrdersSection(): boolean {
+    return canViewOrders();
+  }
 
   private customerNames = new Map<string, string>();
 

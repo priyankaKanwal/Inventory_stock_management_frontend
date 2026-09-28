@@ -3,7 +3,8 @@ import { Router } from '@angular/router';
 import { ProductService } from '../../services/product.service';
 import { SupplierService } from '../../services/supplier.service';
 import { CategoryService } from '../../services/category.service';
-import { currentRole } from '../../auth/utils/roles';
+import { AppRole, currentRole } from '../../auth/utils/roles';
+import { currentUser } from '../../auth/utils/auth-state';
 
 export interface Suggestion {
   type: 'product' | 'supplier' | 'category';
@@ -30,10 +31,10 @@ export class TopbarComponent implements OnInit {
   selectedSuggestionIndex = -1;
 
   get userName(): string {
-    return localStorage.getItem('username') || '';
+    return currentUser()?.username || '';
   }
 
-  get currentRole(): string {
+  get currentRole(): AppRole | null {
     return currentRole();
   }
 

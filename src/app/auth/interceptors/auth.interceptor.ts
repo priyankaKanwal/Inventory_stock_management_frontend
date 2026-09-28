@@ -7,8 +7,12 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
 
-import { AuthService } from '../../services/auth.service';
-import { clearSession, getToken, setToken } from '../utils/session';
+import { AuthService, RefreshResponse } from '../../services/auth.service';
+import {
+  clearSession,
+  getAccessToken,
+  updateAccessToken
+} from '../utils/auth-state';
 
 const AUTH_PATHS = [
   '/auth/login',
@@ -42,7 +46,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
 
   const authEndpoint = isAuthEndpoint(req.url);
-  const token = getToken();
+  const token = getAccessToken();
 
   const authorized = token && !authEndpoint
     ? withBearer(req, token)
@@ -61,10 +65,20 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       refreshing = true;
 
       return authService.refreshToken().pipe(
-        switchMap((response: { access_token: string }) => {
+        switchMap((response: RefreshResponse) => {
           refreshing = false;
 
-          setToken(response.access_token);
+          // A rotated token that carries a different role, or is unusable,
+          // means this session can no longer be trusted to describe itself.
+          // End it and let the user sign in again.
+          if (!updateAccessToken(response.access_token)) {
+            clearSession();
+            router.navigate(['/login'], {
+              queryParams: { reason: 'session-changed' }
+            });
+
+            return throwError(() => new Error('Session is no longer valid.'));
+          }
 
           // Replay the original request with the freshly rotated token.
           return next(withBearer(req, response.access_token));

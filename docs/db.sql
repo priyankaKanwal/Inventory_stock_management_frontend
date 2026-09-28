@@ -100,11 +100,16 @@ VALUES
 ('jakson', 'jakson@gmail.com', '5973053809', 'nsez', '2026-09-08 13:30:39.605071', 'bf18376c-50bf-4a24-b24c-17ebad34f565', FALSE);
 
 -- Users
+-- The role column is VARCHAR(20); the longest AppRole value,
+-- 'INVENTORY_MANAGER', is 17 characters and fits. The role must be one of the
+-- five values the frontend recognises (SUPER_ADMIN, INVENTORY_MANAGER,
+-- ORDER_MANAGER, INVENTORY_STAFF, ORDER_STAFF) or the login response will be
+-- rejected. There is no CHECK constraint enforcing this.
 INSERT INTO public.users (username, email, password_hash, role, id)
 VALUES
-('Bhavya', 'bhavi@gmail.com', '$2b$12$iDvow9FVVkqOlo/2gVjm2OKTYbMr8F6EMspRsIwx.f4lL.N8CfXu.', 'ADMIN', '149d6492-ba9d-47bf-b160-06f4358b2c01'),
-('ishu', 'ishika@yahoo.com', '$2b$12$UrS/faqclRNgFNbIrPMo/eAvnq4px/HQ07bkEaaxa4qAOWdbZpiz6', 'STAFF', 'f81f263a-76f8-44bf-a08c-be87f930fcd7'),
-('yuvi', 'yuvi@gmail.com', '$2b$12$Cgu4Y9oq4aIII4qgzTsWQO7Iwle5rwJAks0yv7CHN1S7ikM9gNVAO', 'ADMIN', 'c328e63a-9c64-4cab-a9a1-100d9e07c0b0');
+('Bhavya', 'bhavi@gmail.com', '$2b$12$iDvow9FVVkqOlo/2gVjm2OKTYbMr8F6EMspRsIwx.f4lL.N8CfXu.', 'SUPER_ADMIN', '149d6492-ba9d-47bf-b160-06f4358b2c01'),
+('ishu', 'ishika@yahoo.com', '$2b$12$UrS/faqclRNgFNbIrPMo/eAvnq4px/HQ07bkEaaxa4qAOWdbZpiz6', 'ORDER_STAFF', 'f81f263a-76f8-44bf-a08c-be87f930fcd7'),
+('yuvi', 'yuvi@gmail.com', '$2b$12$Cgu4Y9oq4aIII4qgzTsWQO7Iwle5rwJAks0yv7CHN1S7ikM9gNVAO', 'INVENTORY_MANAGER', 'c328e63a-9c64-4cab-a9a1-100d9e07c0b0');
 
 -- Products
 INSERT INTO public.products
