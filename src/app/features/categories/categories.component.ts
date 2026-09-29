@@ -1,8 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CategoryService } from '../../services/category.service';
 import { TaskService, Task } from '../../services/task.service';
-import { hasFullInventoryAccess, isWorker } from '../../auth/utils/roles';
-import { canCreateRecord } from '../../auth/utils/task-access';
+import { canCreateRecord, hasFullInventoryAccess, isWorker } from '../../auth/utils/role-auth';
 
 export interface Category {
   id: string;
@@ -19,6 +18,10 @@ export interface Category {
 export class CategoriesComponent implements OnInit {
 
   categories: Category[] = [];
+
+  // Every category across all pages, used for client side search so results
+  // are not limited to the current page of the server side paginated list.
+  allCategories: Category[] = [];
 
   // Pagination state
   currentPage = 1;
@@ -41,6 +44,20 @@ export class CategoriesComponent implements OnInit {
   ngOnInit(): void {
     this.loadMyTasks();
     this.getCategories();
+    this.loadAllCategories();
+  }
+
+  // Load every category across all pages so search covers the whole table.
+  loadAllCategories(): void {
+    this.categoryService.getAllCategories().subscribe({
+      next: (categories) => {
+        this.allCategories = categories || [];
+      },
+      // Search falls back to the current page if this fails
+      error: (error) => {
+        console.error('Error loading all categories:', error);
+      }
+    });
   }
 
   loadMyTasks(): void {

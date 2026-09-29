@@ -3,8 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SupplierService, Supplier } from '../../../../services/supplier.service';
 import { Task } from '../../../../services/task.service';
-import { hasFullInventoryAccess } from '../../../../auth/utils/roles';
-import { canEditRecord as canEditByTasks } from '../../../../auth/utils/task-access';
+import { canEditRecord as canEditByTasks, hasFullInventoryAccess } from '../../../../auth/utils/role-auth';
 
 @Component({
   selector: 'app-suppliers-list',
@@ -15,6 +14,10 @@ export class SupplierListComponent implements OnInit, OnDestroy {
 
   // Suppliers received from parent component
   @Input() suppliers: Supplier[] = [];
+
+  // Every supplier across all pages, received from parent component so that
+  // search is not limited to the current page of the server side paginated list
+  @Input() allSuppliers: Supplier[] = [];
 
   // Tasks received from parent component (staff access gating)
   @Input() myTasks: Task[] = [];
@@ -42,36 +45,50 @@ export class SupplierListComponent implements OnInit, OnDestroy {
   }
 
   get showActions(): boolean {
-    return this.canManage || this.suppliers.some((s) => canEditByTasks(this.myTasks, 'SUPPLIER', s.id));
-  }
+    // Consider every supplier, since a search can surface rows from other pages
+    const source = this.allSuppliers.length ? this.allSuppliers : this.suppliers;
 
-  // First visible item number (1-based)
-  get startItem(): number {
-    if (this.total === 0) {
-      return 0;
-    }
-
-    return (this.currentPage - 1) * this.pageSize + 1;
-  }
-
-  // Last visible item number (1-based)
-  get endItem(): number {
-    return Math.min(this.currentPage * this.pageSize, this.total);
-  }
-
-  // Go to a specific page via the pagination controls
-  goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages || page === this.currentPage) {
-      return;
-    }
-
-    this.pageChange.emit(page);
+    return this.canManage || source.some((s) => canEditByTasks(this.myTasks, 'SUPPLIER', s.id));
   }
 
   // Search values
   searchQuery = '';
   showSuggestions = false;
   selectedSuggestionIndex = -1;
+
+  // Page used while a search is active, so searching pages through the
+  // filtered set in memory instead of asking the server for another page
+  searchPage = 1;
+
+  // The full set is preferred for searching, but fall back to the current
+  // page so a failed full load still renders and filters what it can
+  private get searchSource(): Supplier[] {
+    return this.allSuppliers.length ? this.allSuppliers : this.suppliers;
+  }
+
+  // Whether a search term is currently applied
+  get isFiltering(): boolean {
+    return this.searchQuery.trim().length > 0;
+  }
+
+  // Total number of rows matching the current search
+  get filteredTotal(): number {
+    return this.isFiltering ? this.matches().length : this.total;
+  }
+
+  // Number of pages available for the current search
+  get filteredTotalPages(): number {
+    if (!this.isFiltering) {
+      return this.totalPages;
+    }
+
+    return Math.max(1, Math.ceil(this.filteredTotal / this.pageSize));
+  }
+
+  // Page currently shown, which is the search page while filtering
+  get activePage(): number {
+    return this.isFiltering ? this.searchPage : this.currentPage;
+  }
 
   // Store route subscription
   private routeSubscription?: Subscription;
@@ -81,6 +98,7 @@ export class SupplierListComponent implements OnInit, OnDestroy {
     // Get search value from URL
     this.routeSubscription = this.route.queryParamMap.subscribe((params) => {
       this.searchQuery = params.get('search') ?? '';
+      this.searchPage = 1;
     });
 
     // Load suppliers if parent has not provided them
@@ -96,100 +114,134 @@ export class SupplierListComponent implements OnInit, OnDestroy {
         }
       });
     }
+
+    // Load every supplier so search covers the whole table when this
+    // component is rendered on its own without a parent
+    if (!this.allSuppliers.length) {
+
+      this.supplierService.getAllSuppliers().subscribe({
+        next: (suppliers) => {
+          this.allSuppliers = suppliers || [];
+        },
+
+        error: (error) => {
+          console.error('Error loading all suppliers:', error);
+        }
+      });
+    }
+  }
+
+
+  // Suppliers matching the current search, across every page
+  private matches(): Supplier[] {
+
+    const query = this.searchQuery.trim().toLowerCase();
+
+    return this.searchSource.filter((supplier) => {
+
+      const descriptionMatches = !!supplier.description &&
+        supplier.description.toLowerCase().includes(query);
+
+      return (
+        supplier.name.toLowerCase().includes(query) ||
+        supplier.contact_email.toLowerCase().includes(query) ||
+        descriptionMatches
+      );
+
+    });
+  }
+
+
+  // First visible item number (1-based)
+  get startItem(): number {
+    if (this.filteredTotal === 0) {
+      return 0;
+    }
+
+    return (this.activePage - 1) * this.pageSize + 1;
+  }
+
+  // Last visible item number (1-based)
+  get endItem(): number {
+    return Math.min(this.activePage * this.pageSize, this.filteredTotal);
+  }
+
+  // Go to a specific page via the pagination controls
+  goToPage(page: number): void {
+    if (
+      page < 1 ||
+      page > this.filteredTotalPages ||
+      page === this.activePage
+    ) {
+      return;
+    }
+
+    // While searching, page through the filtered set locally
+    if (this.isFiltering) {
+      this.searchPage = page;
+      return;
+    }
+
+    this.pageChange.emit(page);
   }
 
 
   // Filter suppliers based on search
 
     get filteredSuppliers(): Supplier[] {
-  
-      const query = this.searchQuery.trim().toLowerCase();
-  
-      // If search is empty, show all suppliers
-      if (!query) {
+
+      // No search, so the server side paginated page is already correct
+      if (!this.isFiltering) {
         return this.suppliers;
       }
-  
-      // Search by supplier name or contact email
-      const result = this.suppliers.filter((supplier) => {
-  
-        let descriptionMatches = false;
-  
-        // Check description only if it exists
-        if (supplier.description) {
-          descriptionMatches =
-            supplier.description.toLowerCase().includes(query);
-        }
-  
-        return (
-          supplier.name.toLowerCase().includes(query) ||
-          supplier.contact_email.toLowerCase().includes(query) ||
-          descriptionMatches
-        );
-  
-      });
-  
-      return result;
+
+      // Filter every page, then take just the rows for the current search page
+      const start = (this.searchPage - 1) * this.pageSize;
+
+      return this.matches().slice(start, start + this.pageSize);
     }
-  
-  
+
+
     // Get search suggestions
     get suggestions(): Supplier[] {
-  
-      const query = this.searchQuery.trim().toLowerCase();
-  
-      // If search is empty, show no suggestions
-      if (!query) {
+
+      if (!this.isFiltering) {
         return [];
       }
-  
-      // Find matching suppliers
-      const matches = this.suppliers.filter((supplier) => {
-  
-        let descriptionMatches = false;
-  
-        // Check description only if it exists
-        if (supplier.description) {
-          descriptionMatches =
-            supplier.description.toLowerCase().includes(query);
-        }
-  
-        return (
-          supplier.name.toLowerCase().includes(query) ||
-          supplier.contact_email.toLowerCase().includes(query) ||
-          descriptionMatches
-        );
-  
-      });
-  
+
       // Remove duplicate supplier names
-      const uniqueSuppliers = this.dedupe(matches);
-  
+      const uniqueSuppliers = this.dedupe(this.matches());
+
       // Show maximum 8 suggestions
       const result = uniqueSuppliers.slice(0, 8);
-  
+
       return result;
     }
-  
-  
+
+
     // When user types in search box
     onSearchInput(query: string): void {
-  
+
       this.searchQuery = query;
-  
+
+      // Every new term starts from the first page of results
+      this.searchPage = 1;
+
       this.showSuggestions = true;
-  
+
       this.selectedSuggestionIndex = -1;
     }
-  
-  
+
+
     // When user selects a suggestion
     selectSuggestion(supplier: Supplier): void {
-  
+
       this.searchQuery = supplier.name;
-  
+
+      this.searchPage = 1;
+
       this.showSuggestions = false;
-  
+
       this.selectedSuggestionIndex = -1;
     }
   
@@ -312,8 +364,15 @@ export class SupplierListComponent implements OnInit, OnDestroy {
       this.supplierService.deleteSupplier(id).subscribe({
         next: () => {
   
-          // Remove deleted supplier from UI
+          // Remove deleted supplier from the visible page and the full
+          // set used for searching
           this.suppliers = this.suppliers.filter((item) => {
+  
+            return item.id !== id;
+  
+          });
+  
+          this.allSuppliers = this.allSuppliers.filter((item) => {
   
             return item.id !== id;
   

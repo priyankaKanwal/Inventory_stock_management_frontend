@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { UserService, User } from '../../../../services/user.service';
-import { ALL_ROLES, AppRole } from '../../../../auth/utils/roles';
+import { ALL_ROLES, AppRole } from '../../../../auth/utils/role-auth';
 import { clearSession, currentUser } from '../../../../auth/utils/auth-state';
 
 @Component({

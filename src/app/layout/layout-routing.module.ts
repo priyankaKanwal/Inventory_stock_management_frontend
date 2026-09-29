@@ -10,7 +10,7 @@ import {
   ORDER_MANAGER_ROLE,
   INVENTORY_STAFF_ROLE,
   ORDER_STAFF_ROLE
-} from '../auth/utils/roles';
+} from '../auth/utils/role-auth';
 
 const INVENTORY_VIEW = [SUPER_ADMIN_ROLE, INVENTORY_MANAGER_ROLE];
 const ORDER_VIEW = [

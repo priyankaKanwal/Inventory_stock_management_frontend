@@ -3,7 +3,7 @@ import { Subscription } from 'rxjs';
 
 import { TaskService, Task, TaskStatus, TaskTargetType } from '../../../../services/task.service';
 import { UserService, User } from '../../../../services/user.service';
-import { isSuperAdmin } from '../../../../auth/utils/roles';
+import { isSuperAdmin } from '../../../../auth/utils/role-auth';
 
 type TaskFilter = TaskStatus | '';
 

@@ -11,7 +11,7 @@ import {
   canViewProducts,
   currentRole,
   isSuperAdmin
-} from '../../auth/utils/roles';
+} from '../../auth/utils/role-auth';
 import { clearSession } from '../../auth/utils/auth-state';
 
 @Component({

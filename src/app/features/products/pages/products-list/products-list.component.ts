@@ -5,8 +5,7 @@ import { CategoryService } from '../../../../services/category.service';
 import { SupplierService } from '../../../../services/supplier.service';
 import { ProductService } from '../../../../services/product.service';
 import { Task } from '../../../../services/task.service';
-import { hasFullInventoryAccess } from '../../../../auth/utils/roles';
-import { canEditRecord as canEditByTasks } from '../../../../auth/utils/task-access';
+import { canEditRecord as canEditByTasks, hasFullInventoryAccess } from '../../../../auth/utils/role-auth';
 import { Product } from '../../products.component';
 import { Category } from '../../../categories/categories.component';
 import { Supplier } from '../../../suppliers/suppliers.component';
@@ -21,6 +20,10 @@ import { Supplier } from '../../../suppliers/suppliers.component';
 export class ProductsListComponent implements OnInit {
   // Products received from ProductsComponent
   @Input() products: Product[] = [];
+
+  // Every product across all pages, received from parent component so that
+  // search is not limited to the current page of the server side paginated list
+  @Input() allProducts: Product[] = [];
 
   // Tasks received from ProductsComponent (staff access gating)
   @Input() myTasks: Task[] = [];
@@ -67,7 +70,10 @@ export class ProductsListComponent implements OnInit {
   }
 
   get showActions(): boolean {
-    return this.canManage || this.products.some((p) => canEditByTasks(this.myTasks, 'PRODUCT', p.id));
+    // Consider every product, since a search can surface rows from other pages
+    const source = this.allProducts.length ? this.allProducts : this.products;
+
+    return this.canManage || source.some((p) => canEditByTasks(this.myTasks, 'PRODUCT', p.id));
   }
 
   // Search / Filter
@@ -78,6 +84,43 @@ export class ProductsListComponent implements OnInit {
   showSuggestions = false;
 
   selectedSuggestionIndex = -1;
+
+  // Page used while a search or status filter is active, so filtering pages
+  // through the results in memory instead of asking the server for a page
+  searchPage = 1;
+
+  // The full set is preferred for searching, but fall back to the current
+  // page so a failed full load still renders and filters what it can
+  private get searchSource(): Product[] {
+    return this.allProducts.length ? this.allProducts : this.products;
+  }
+
+  // Whether a search term or a specific stock status is applied
+  get isFiltering(): boolean {
+    return (
+      this.searchQuery.trim().length > 0 ||
+      this.selectedStatus !== 'All Status'
+    );
+  }
+
+  // Total number of rows matching the current search and status filter
+  get filteredTotal(): number {
+    return this.isFiltering ? this.matches().length : this.total;
+  }
+
+  // Number of pages available for the current search and status filter
+  get filteredTotalPages(): number {
+    if (!this.isFiltering) {
+      return this.totalPages;
+    }
+
+    return Math.max(1, Math.ceil(this.filteredTotal / this.pageSize));
+  }
+
+  // Page currently shown, which is the search page while filtering
+  get activePage(): number {
+    return this.isFiltering ? this.searchPage : this.currentPage;
+  }
 
   // Category / Supplier name maps
   private categoryNames =
@@ -93,6 +136,8 @@ export class ProductsListComponent implements OnInit {
 
       this.searchQuery =
         params.get('search') || '';
+
+      this.searchPage = 1;
 
     });
 
@@ -163,7 +208,26 @@ export class ProductsListComponent implements OnInit {
   //filter Products based on status and search query
   get filteredProducts(): Product[] {
 
-    let result = this.products;
+    // Nothing filtered, so the server side paginated page is already correct
+    if (!this.isFiltering) {
+
+      return this.products;
+
+    }
+
+    // Filter every page, then take just the rows for the current search page
+    const start = (this.searchPage - 1) * this.pageSize;
+
+    return this.matches().slice(start, start + this.pageSize);
+
+  }
+
+
+  //Products matching the current search and status filter, across every page
+
+  private matches(): Product[] {
+
+    let result = this.searchSource;
 
 
     // -------------------------------------------------------
@@ -199,31 +263,7 @@ export class ProductsListComponent implements OnInit {
 
       result = result.filter((product) => {
 
-        return (
-
-          product.name
-            .toLowerCase()
-            .includes(query)
-
-          ||
-
-          product.sku
-            .toLowerCase()
-            .includes(query)
-
-          ||
-
-          this.getCategoryName(product)
-            .toLowerCase()
-            .includes(query)
-
-          ||
-
-          this.getSupplierName(product)
-            .toLowerCase()
-            .includes(query)
-
-        );
+        return this.textMatches(product, query);
 
       });
 
@@ -235,50 +275,53 @@ export class ProductsListComponent implements OnInit {
   }
 
 
+  //Case insensitive match of a product against name, sku, category or supplier
+
+  private textMatches(
+    product: Product,
+    query: string
+  ): boolean {
+
+    return (
+
+      product.name
+        .toLowerCase()
+        .includes(query)
+
+      ||
+
+      product.sku
+        .toLowerCase()
+        .includes(query)
+
+      ||
+
+      this.getCategoryName(product)
+        .toLowerCase()
+        .includes(query)
+
+      ||
+
+      this.getSupplierName(product)
+        .toLowerCase()
+        .includes(query)
+
+    );
+
+  }
+
+
   get suggestions(): Product[] {
 
-    const query =
-      this.searchQuery
-        .trim()
-        .toLowerCase();
 
-
-    if (!query) {
+    if (!this.isFiltering) {
 
       return [];
 
     }
 
 
-    return this.products.filter((product) => {
-
-      return (
-
-        product.name
-          .toLowerCase()
-          .includes(query)
-
-        ||
-
-        product.sku
-          .toLowerCase()
-          .includes(query)
-
-        ||
-
-        this.getCategoryName(product)
-          .toLowerCase()
-          .includes(query)
-
-        ||
-
-        this.getSupplierName(product)
-          .toLowerCase()
-          .includes(query)
-
-      );
-
-    });
+    return this.matches();
 
   }
 
@@ -351,6 +394,9 @@ export class ProductsListComponent implements OnInit {
 
     this.searchQuery = query;
 
+    // Every new term starts from the first page of results
+    this.searchPage = 1;
+
     this.showSuggestions = true;
 
     this.selectedSuggestionIndex = -1;
@@ -363,6 +409,8 @@ export class ProductsListComponent implements OnInit {
 
     this.searchQuery =
       product.name;
+
+    this.searchPage = 1;
 
     this.showSuggestions =
       false;
@@ -450,6 +498,9 @@ export class ProductsListComponent implements OnInit {
 
   onStatusChange(status: string): void {
     this.selectedStatus = status;
+
+    // Every new status filter starts from the first page of results
+    this.searchPage = 1;
   }
 
   // Go to a specific page via the pagination controls
@@ -458,12 +509,18 @@ export class ProductsListComponent implements OnInit {
 
     if (
       page < 1 ||
-      page > this.totalPages ||
-      page === this.currentPage
+      page > this.filteredTotalPages ||
+      page === this.activePage
     ) {
 
       return;
 
+    }
+
+    // While filtering, page through the results locally
+    if (this.isFiltering) {
+      this.searchPage = page;
+      return;
     }
 
     this.pageChange.emit(page);
@@ -474,13 +531,13 @@ export class ProductsListComponent implements OnInit {
 
   get startItem(): number {
 
-    if (this.total === 0) {
+    if (this.filteredTotal === 0) {
 
       return 0;
 
     }
 
-    return (this.currentPage - 1) * this.pageSize + 1;
+    return (this.activePage - 1) * this.pageSize + 1;
 
   }
 
@@ -488,7 +545,7 @@ export class ProductsListComponent implements OnInit {
 
   get endItem(): number {
 
-    return Math.min(this.currentPage * this.pageSize, this.total);
+    return Math.min(this.activePage * this.pageSize, this.filteredTotal);
 
   }
 
@@ -617,7 +674,14 @@ export class ProductsListComponent implements OnInit {
 
     this.productService.deleteProduct(id).subscribe({
       next: () => {
+
+        // Remove the deleted product from the visible page and the full
+        // set used for searching
         this.products = this.products.filter(
+          (item) => String(item.id) !== String(id)
+        );
+
+        this.allProducts = this.allProducts.filter(
           (item) => String(item.id) !== String(id)
         );
       },

@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { Product, ProductsResponse } from '../features/products/products.component';
 
-export { Product };
+export { Product, ProductsResponse };
 
 export interface ProductQuery {
   page?: number;
@@ -51,6 +51,13 @@ export class ProductService extends ApiService {
     return this.http.get<ProductsResponse>(
       this.buildUrl('products/'),
       { params }
+    );
+  }
+
+  // GET - All products, across every page
+  getAllProducts(): Observable<Product[]> {
+    return this.fetchAll<Product>((page, pageSize) =>
+      this.getProducts({ page, pageSize })
     );
   }
 

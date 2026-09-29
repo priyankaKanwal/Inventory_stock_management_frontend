@@ -1,6 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormArray, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { AbstractControl, FormBuilder, FormArray, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
 import {
@@ -10,7 +9,7 @@ import {
 } from '../../services/order.service';
 import { CustomerService, Customer } from '../../services/customers.service';
 import { ProductService, Product } from '../../services/product.service';
-import { canManageOrders, canTransitionOrderStatus } from '../../auth/utils/roles';
+import { canManageOrders, canTransitionOrderStatus } from '../../auth/utils/role-auth';
 
 // Valid transitions enforced by the backend state machine.
 const NEXT_ORDER_STATUSES: Record<OrderStatus, OrderStatus[]> = {
@@ -46,6 +45,12 @@ export class OrdersComponent implements OnInit, OnDestroy {
   isLoading = false;
   errorMessage = '';
 
+  // Reference lists backing the create form. Tracked separately from
+  // errorMessage so a failed lookup is explained in the modal instead of
+  // leaving a dropdown that can never satisfy validation.
+  customersLoadError = '';
+  productsLoadError = '';
+
   showCreateModal = false;
   showDetailsModal = false;
   showStatusModal = false;
@@ -79,7 +84,6 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   constructor(
     private fb: FormBuilder,
-    private router: Router,
     private orderService: OrderService,
     private customerService: CustomerService,
     private productService: ProductService
@@ -107,6 +111,10 @@ export class OrdersComponent implements OnInit, OnDestroy {
       && (NEXT_ORDER_STATUSES[order.status]?.length ?? 0) > 0;
   }
 
+  isDelivered(order: Order): boolean {
+    return order.status === 'DELIVERED';
+  }
+
   loadOrders(): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -125,9 +133,10 @@ export class OrdersComponent implements OnInit, OnDestroy {
           },
           error: (error) => {
             this.isLoading = false;
-            this.errorMessage =
-              error.error?.detail ||
-              'Failed to load orders. The order service may not be available yet.';
+            this.errorMessage = this.apiErrorMessage(
+              error,
+              'Failed to load orders. The order service may not be available yet.'
+            );
           }
         })
     );
@@ -160,11 +169,13 @@ export class OrdersComponent implements OnInit, OnDestroy {
     this.subscriptions.push(this.customerService.getAllCustomers().subscribe({
       next: (customers) => {
         this.customers = customers || [];
+        this.customersLoadError = '';
         this.customerNames.clear();
         this.customers.forEach((c) => this.customerNames.set(c.id, c.name));
       },
       error: () => {
         this.customers = [];
+        this.customersLoadError = 'Could not load customers.';
       }
     }));
   }
@@ -174,6 +185,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
       this.productService.getProducts({ page: 1, pageSize: 100 }).subscribe({
         next: (response) => {
           this.products = response.items || [];
+          this.productsLoadError = '';
           this.productNames.clear();
           this.products.forEach((p) => {
             this.productNames.set(p.id, p.name);
@@ -182,9 +194,22 @@ export class OrdersComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.products = [];
+          this.productsLoadError = 'Could not load products.';
         }
       })
     );
+  }
+
+  // Single message covering whichever reference list failed, for the modal banner.
+  get createFormLoadError(): string {
+    return [this.customersLoadError, this.productsLoadError]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  retryCreateFormLoads(): void {
+    this.loadCustomers();
+    this.loadProducts();
   }
 
   customerName(id: string): string {
@@ -264,14 +289,52 @@ export class OrdersComponent implements OnInit, OnDestroy {
     this.items.removeAt(index);
   }
 
+  // FormArray.controls is typed as AbstractControl[], so the item row's own
+  // group has to be reached through get() rather than a .controls index.
+  isItemFieldInvalid(item: AbstractControl, field: string): boolean {
+    const control = item.get(field);
+
+    return !!control && control.touched && control.invalid;
+  }
+
   productStock(id: string): number {
     const product = this.products.find((p) => p.id === id);
     return product ? Number(product.quantity_in_stock) : 0;
   }
 
+  // The backend reports validation failures in more than one shape: a plain
+  // string under `detail`, a DRF list of messages, or a per-field error object
+  // such as { quantity: ['Insufficient stock.'] }. Flatten all of them so a
+  // rejected order never surfaces as "[object Object]".
+  private apiErrorMessage(error: unknown, fallback: string): string {
+    const body = (error as { error?: unknown } | null)?.error;
+
+    const flatten = (value: unknown): string => {
+      if (typeof value === 'string') {
+        return value.trim();
+      }
+
+      if (Array.isArray(value)) {
+        return value.map(flatten).filter(Boolean).join(' ');
+      }
+
+      if (value && typeof value === 'object') {
+        return Object.values(value as Record<string, unknown>)
+          .map(flatten)
+          .filter(Boolean)
+          .join(' ');
+      }
+
+      return '';
+    };
+
+    return flatten(body) || fallback;
+  }
+
   createOrder(): void {
     if (this.createForm.invalid) {
       this.createForm.markAllAsTouched();
+      this.showToast('error', 'Please complete the highlighted fields.');
       return;
     }
 
@@ -302,8 +365,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
         this.isSaving = false;
         this.showToast(
           'error',
-          error.error?.detail ||
-          'Failed to create order.'
+          this.apiErrorMessage(error, 'Failed to create order.')
         );
       }
     }));
@@ -346,18 +408,11 @@ export class OrdersComponent implements OnInit, OnDestroy {
             this.isSaving = false;
             this.showToast(
               'error',
-              error.error?.detail ||
-              'Failed to update order status.'
+              this.apiErrorMessage(error, 'Failed to update order status.')
             );
           }
         })
     );
-  }
-
-  openPredictions(order: Order): void {
-    this.router.navigate(['/predictions'], {
-      queryParams: { orderId: order.id }
-    });
   }
 
   showToast(type: 'success' | 'error' | 'info', message: string): void {

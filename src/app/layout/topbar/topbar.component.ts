@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { ProductService } from '../../services/product.service';
 import { SupplierService } from '../../services/supplier.service';
 import { CategoryService } from '../../services/category.service';
-import { AppRole, currentRole } from '../../auth/utils/roles';
+import { AppRole, currentRole } from '../../auth/utils/role-auth';
 import { currentUser } from '../../auth/utils/auth-state';
 
 export interface Suggestion {

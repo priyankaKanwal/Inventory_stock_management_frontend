@@ -6,7 +6,7 @@ import { CategoriesComponent } from './categories.component';
 import { CategoriesFormComponent } from './pages/categories-form/categories-form.component';
 
 import { roleGuard } from '../../auth/guards/role.guard';
-import { ALL_ROLES } from '../../auth/utils/roles';
+import { ALL_ROLES } from '../../auth/utils/role-auth';
 
 const routes: Routes = [
 

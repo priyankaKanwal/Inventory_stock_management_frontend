@@ -3,8 +3,7 @@ import { Subscription } from 'rxjs';
 
 import { ProductService } from '../../services/product.service';
 import { TaskService, Task } from '../../services/task.service';
-import { hasFullInventoryAccess, isWorker } from '../../auth/utils/roles';
-import { canCreateRecord } from '../../auth/utils/task-access';
+import { canCreateRecord, hasFullInventoryAccess, isWorker } from '../../auth/utils/role-auth';
 
 
 // Product interface
@@ -55,8 +54,15 @@ export class ProductsComponent implements OnInit, OnDestroy {
   // Store products received from backend
   products: Product[] = [];
 
+  // Every product across all pages, used for client side search and the
+  // stock status counts so they are not limited to the visible page.
+  allProducts: Product[] = [];
+
   // Store subscription so we can unsubscribe later
   private productSubscription?: Subscription;
+
+  // Subscription for the full product set
+  private allProductsSubscription?: Subscription;
 
   // My assigned tasks (staff use these for per-record access gating)
   myTasks: Task[] = [];
@@ -75,6 +81,27 @@ export class ProductsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadMyTasks();
     this.getProducts();
+    this.loadAllProducts();
+  }
+
+  // Load every product across all pages so search is not limited to the
+  // current page of the server side paginated list.
+  loadAllProducts(): void {
+
+    this.allProductsSubscription = this.productService
+      .getAllProducts()
+      .subscribe({
+
+        next: (products) => {
+          this.allProducts = products || [];
+        },
+
+        // Search falls back to the current page if this fails
+        error: (error) => {
+          console.error('Error loading all products:', error);
+        }
+
+      });
   }
 
   loadMyTasks(): void {
@@ -151,7 +178,13 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
     const statusLower = status.toLowerCase();
 
-    return this.products.filter(
+    // Prefer the full set so the counts cover every page, not just the
+    // rows currently visible in the table.
+    const source = this.allProducts.length
+      ? this.allProducts
+      : this.products;
+
+    return source.filter(
       product => product.stock_status.toLowerCase() === statusLower
     ).length;
   }
@@ -161,6 +194,8 @@ export class ProductsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
 
     this.productSubscription?.unsubscribe();
+
+    this.allProductsSubscription?.unsubscribe();
 
   }
 

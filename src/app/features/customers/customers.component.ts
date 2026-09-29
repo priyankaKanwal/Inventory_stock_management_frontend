@@ -7,7 +7,7 @@ import {
   Customer,
   CustomerPayload
 } from '../../services/customers.service';
-import { canManageCustomers } from '../../auth/utils/roles';
+import { canManageCustomers } from '../../auth/utils/role-auth';
 
 @Component({
   selector: 'app-customers',

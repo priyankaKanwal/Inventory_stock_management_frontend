@@ -139,22 +139,23 @@
     <div class="flex flex-col items-center justify-between gap-2 sm:flex-row">
 
       <div class="text-sm text-slate-500">
-        <ng-container *ngIf="total > 0">
+        <ng-container *ngIf="filteredTotal > 0">
           Showing
           <span class="font-medium text-slate-500">{{ startItem }}</span>
           –
           <span class="font-medium text-slate-500">{{ endItem }}</span>
           of
         </ng-container>
-        <span class="font-medium text-slate-500">{{ total }}</span>
+        <span class="font-medium text-slate-500">{{ filteredTotal }}</span>
         categories
+        <span *ngIf="isFiltering" class="text-slate-400">(filtered)</span>
       </div>
 
       <div class="flex items-center gap-2">
         <button
           type="button"
-          (click)="goToPage(currentPage - 1)"
-          [disabled]="currentPage <= 1 || total === 0"
+          (click)="goToPage(activePage - 1)"
+          [disabled]="activePage <= 1 || filteredTotal === 0"
           class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Previous
@@ -162,15 +163,15 @@
 
         <span class="px-2 text-sm text-slate-500">
           Page
-          <span class="font-medium text-slate-500">{{ currentPage }}</span>
+          <span class="font-medium text-slate-500">{{ activePage }}</span>
           of
-          <span class="font-medium text-slate-500">{{ totalPages }}</span>
+          <span class="font-medium text-slate-500">{{ filteredTotalPages }}</span>
         </span>
 
         <button
           type="button"
-          (click)="goToPage(currentPage + 1)"
-          [disabled]="currentPage >= totalPages || total === 0"
+          (click)="goToPage(activePage + 1)"
+          [disabled]="activePage >= filteredTotalPages || filteredTotal === 0"
           class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Next

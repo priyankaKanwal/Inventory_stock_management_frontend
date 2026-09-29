@@ -6,7 +6,7 @@ import { SuppliersComponent } from './suppliers.component';
 import { SuplierFormComponent } from './pages/suplier-form/suplier-form.component';
 
 import { roleGuard } from '../../auth/guards/role.guard';
-import { ALL_ROLES } from '../../auth/utils/roles';
+import { ALL_ROLES } from '../../auth/utils/role-auth';
 
 const routes: Routes = [
 

@@ -6,7 +6,7 @@ import { MyTasksComponent } from './pages/my-tasks/my-tasks.component';
 import { ManageTasksComponent } from './pages/manage-tasks/manage-tasks.component';
 
 import { roleGuard } from '../../auth/guards/role.guard';
-import { SUPER_ADMIN_ROLE, MANAGER_ROLES } from '../../auth/utils/roles';
+import { SUPER_ADMIN_ROLE, MANAGER_ROLES } from '../../auth/utils/role-auth';
 
 const routes: Routes = [
 

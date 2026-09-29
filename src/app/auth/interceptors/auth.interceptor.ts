@@ -7,12 +7,8 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
 
-import { AuthService, RefreshResponse } from '../../services/auth.service';
-import {
-  clearSession,
-  getAccessToken,
-  updateAccessToken
-} from '../utils/auth-state';
+import { SessionService } from '../services/session.service';
+import { getAccessToken } from '../utils/auth-state';
 
 const AUTH_PATHS = [
   '/auth/login',
@@ -38,11 +34,8 @@ function withBearer(req: HttpRequest<unknown>, token: string): HttpRequest<unkno
   });
 }
 
-// Guards against parallel 401s triggering duplicate refresh calls.
-let refreshing = false;
-
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
+  const session = inject(SessionService);
   const router = inject(Router);
 
   const authEndpoint = isAuthEndpoint(req.url);
@@ -58,39 +51,24 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
-      if (refreshing) {
-        return throwError(() => error);
-      }
-
-      refreshing = true;
-
-      return authService.refreshToken().pipe(
-        switchMap((response: RefreshResponse) => {
-          refreshing = false;
-
-          // A rotated token that carries a different role, or is unusable,
-          // means this session can no longer be trusted to describe itself.
-          // End it and let the user sign in again.
-          if (!updateAccessToken(response.access_token)) {
-            clearSession();
-            router.navigate(['/login'], {
-              queryParams: { reason: 'session-changed' }
-            });
-
-            return throwError(() => new Error('Session is no longer valid.'));
-          }
-
-          // Replay the original request with the freshly rotated token.
-          return next(withBearer(req, response.access_token));
-        }),
+      return session.refresh().pipe(
+        // catchError sits above switchMap on purpose: it wraps the refresh call
+        // and nothing else. Downstream of the replay it used to catch the failed
+        // request's own error too, which ended the session and threw away the
+        // token the refresh had just produced.
         catchError((refreshError) => {
-          refreshing = false;
-
-          clearSession();
-          router.navigate(['/login']);
+          router.navigate(['/login'], {
+            queryParams: {
+              returnUrl: router.url,
+              reason: 'session-changed'
+            }
+          });
 
           return throwError(() => refreshError);
-        })
+        }),
+        // Shared across every request that 401ed at the same time, so parallel
+        // loads are all replayed against the new token rather than failing.
+        switchMap((newToken) => next(withBearer(req, newToken)))
       );
     })
   );

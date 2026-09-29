@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { ApiService, Paginated } from './api.service';
-import { AppRole } from '../auth/utils/roles';
+import { AppRole } from '../auth/utils/role-auth';
 
 export interface User {
   id: string;

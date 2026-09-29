@@ -4,8 +4,7 @@ import { Subscription } from 'rxjs';
 
 import { CategoryService } from '../../../../services/category.service';
 import { Task } from '../../../../services/task.service';
-import { hasFullInventoryAccess } from '../../../../auth/utils/roles';
-import { canEditRecord as canEditByTasks } from '../../../../auth/utils/task-access';
+import { canEditRecord as canEditByTasks, hasFullInventoryAccess } from '../../../../auth/utils/role-auth';
 import { Category } from '../../categories.component';
 
 
@@ -18,6 +17,10 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
 
   // Categories received from parent component
   @Input() categories: Category[] = [];
+
+  // Every category across all pages, received from parent component so that
+  // search is not limited to the current page of the server side paginated list
+  @Input() allCategories: Category[] = [];
 
   // Tasks received from parent component (staff access gating)
   @Input() myTasks: Task[] = [];
@@ -45,36 +48,53 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
   }
 
   get showActions(): boolean {
-    return this.canManage || this.categories.some((c) => canEditByTasks(this.myTasks, 'CATEGORY', c.id));
-  }
+    // Consider every category, since a search can surface rows from other pages
+    const source = this.allCategories.length
+      ? this.allCategories
+      : this.categories;
 
-  // First visible item number (1-based)
-  get startItem(): number {
-    if (this.total === 0) {
-      return 0;
-    }
-
-    return (this.currentPage - 1) * this.pageSize + 1;
-  }
-
-  // Last visible item number (1-based)
-  get endItem(): number {
-    return Math.min(this.currentPage * this.pageSize, this.total);
-  }
-
-  // Go to a specific page via the pagination controls
-  goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages || page === this.currentPage) {
-      return;
-    }
-
-    this.pageChange.emit(page);
+    return this.canManage ||
+      source.some((c) => canEditByTasks(this.myTasks, 'CATEGORY', c.id));
   }
 
   // Search values
   searchQuery = '';
   showSuggestions = false;
   selectedSuggestionIndex = -1;
+
+  // Page used while a search is active, so searching pages through the
+  // filtered set in memory instead of asking the server for another page
+  searchPage = 1;
+
+  // The full set is preferred for searching, but fall back to the current
+  // page so a failed full load still renders and filters what it can
+  private get searchSource(): Category[] {
+    return this.allCategories.length ? this.allCategories : this.categories;
+  }
+
+  // Whether a search term is currently applied
+  get isFiltering(): boolean {
+    return this.searchQuery.trim().length > 0;
+  }
+
+  // Total number of rows matching the current search
+  get filteredTotal(): number {
+    return this.isFiltering ? this.matches().length : this.total;
+  }
+
+  // Number of pages available for the current search
+  get filteredTotalPages(): number {
+    if (!this.isFiltering) {
+      return this.totalPages;
+    }
+
+    return Math.max(1, Math.ceil(this.filteredTotal / this.pageSize));
+  }
+
+  // Page currently shown, which is the search page while filtering
+  get activePage(): number {
+    return this.isFiltering ? this.searchPage : this.currentPage;
+  }
 
   // Store route subscription
   private routeSubscription?: Subscription;
@@ -84,72 +104,69 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
     // Get search value from URL
     this.routeSubscription = this.route.queryParamMap.subscribe((params) => {
       this.searchQuery = params.get('search') ?? '';
+      this.searchPage = 1;
     });
+  }
+
+
+  // First visible item number (1-based)
+  get startItem(): number {
+    if (this.filteredTotal === 0) {
+      return 0;
+    }
+
+    return (this.activePage - 1) * this.pageSize + 1;
+  }
+
+  // Last visible item number (1-based)
+  get endItem(): number {
+    return Math.min(this.activePage * this.pageSize, this.filteredTotal);
+  }
+
+  // Go to a specific page via the pagination controls
+  goToPage(page: number): void {
+    if (
+      page < 1 ||
+      page > this.filteredTotalPages ||
+      page === this.activePage
+    ) {
+      return;
+    }
+
+    // While searching, page through the filtered set locally
+    if (this.isFiltering) {
+      this.searchPage = page;
+      return;
+    }
+
+    this.pageChange.emit(page);
   }
 
 
   // Filter categories based on search
   get filteredCategories(): Category[] {
 
-    const query = this.searchQuery.trim().toLowerCase();
-
-    // If search is empty, show all categories
-    if (!query) {
+    // No search, so the server side paginated page is already correct
+    if (!this.isFiltering) {
       return this.categories;
     }
 
-    // Search by category name or description
-    const result = this.categories.filter((category) => {
+    // Filter every page, then take just the rows for the current search page
+    const start = (this.searchPage - 1) * this.pageSize;
 
-      let descriptionMatches = false;
-
-      // Check description only if it exists
-      if (category.description) {
-        descriptionMatches =
-          category.description.toLowerCase().includes(query);
-      }
-
-      return (
-        category.name.toLowerCase().includes(query) ||
-        descriptionMatches
-      );
-
-    });
-
-    return result;
+    return this.matches().slice(start, start + this.pageSize);
   }
 
 
   // Get search suggestions
   get suggestions(): Category[] {
 
-    const query = this.searchQuery.trim().toLowerCase();
-
-    // If search is empty, show no suggestions
-    if (!query) {
+    if (!this.isFiltering) {
       return [];
     }
 
-    // Find matching categories
-    const matches = this.categories.filter((category) => {
-
-      let descriptionMatches = false;
-
-      // Check description only if it exists
-      if (category.description) {
-        descriptionMatches =
-          category.description.toLowerCase().includes(query);
-      }
-
-      return (
-        category.name.toLowerCase().includes(query) ||
-        descriptionMatches
-      );
-
-    });
-
     // Remove duplicate category names
-    const uniqueCategories = this.dedupe(matches);
+    const uniqueCategories = this.dedupe(this.matches());
 
     // Show maximum 8 suggestions
     const result = uniqueCategories.slice(0, 8);
@@ -158,10 +175,32 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
   }
 
 
+  // Categories matching the current search, across every page
+  private matches(): Category[] {
+
+    const query = this.searchQuery.trim().toLowerCase();
+
+    return this.searchSource.filter((category) => {
+
+      const descriptionMatches = !!category.description &&
+        category.description.toLowerCase().includes(query);
+
+      return (
+        category.name.toLowerCase().includes(query) ||
+        descriptionMatches
+      );
+
+    });
+  }
+
+
   // When user types in search box
   onSearchInput(query: string): void {
 
     this.searchQuery = query;
+
+    // Every new term starts from the first page of results
+    this.searchPage = 1;
 
     this.showSuggestions = true;
 
@@ -173,6 +212,8 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
   selectSuggestion(category: Category): void {
 
     this.searchQuery = category.name;
+
+    this.searchPage = 1;
 
     this.showSuggestions = false;
 
@@ -299,8 +340,15 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
 
       next: () => {
 
-        // Remove deleted category from UI
+        // Remove deleted category from both the visible page and the full
+        // set used for searching
         this.categories = this.categories.filter((item) => {
+
+          return item.id !== id;
+
+        });
+
+        this.allCategories = this.allCategories.filter((item) => {
 
           return item.id !== id;
 

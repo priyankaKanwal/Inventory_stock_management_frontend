@@ -6,7 +6,7 @@ import { ProductsComponent } from './products.component';
 import { ProductsFormComponent } from './pages/products-form/products-form.component';
 
 import { roleGuard } from '../../auth/guards/role.guard';
-import { ALL_ROLES } from '../../auth/utils/roles';
+import { ALL_ROLES } from '../../auth/utils/role-auth';
 
 const routes: Routes = [
 

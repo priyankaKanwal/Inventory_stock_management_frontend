@@ -1,15 +1,6 @@
+import { Task, TaskTargetType } from '../../services/task.service';
 import { currentUser } from './auth-state';
-import {
-  ALL_ROLES,
-  AppRole,
-  INVENTORY_MANAGER_ROLE,
-  INVENTORY_STAFF_ROLE,
-  MANAGER_ROLES,
-  ORDER_MANAGER_ROLE,
-  ORDER_STAFF_ROLE,
-  STAFF_ROLES,
-  SUPER_ADMIN_ROLE
-} from './role-model';
+import {ALL_ROLES,AppRole,INVENTORY_MANAGER_ROLE,INVENTORY_STAFF_ROLE,MANAGER_ROLES,ORDER_MANAGER_ROLE,ORDER_STAFF_ROLE,STAFF_ROLES,SUPER_ADMIN_ROLE} from './role-model';
 
 export {
   ALL_ROLES,
@@ -73,8 +64,7 @@ export function isStaff(): boolean {
   return hasRoles(...STAFF_ROLES);
 }
 
-// Staff roles have narrow portfolio-wide permissions and are gated per-record
-// by their assigned tasks (see the task-access util).
+// Whether the current user is a worker (staff) or a manager (super admin or manager role)
 export function isWorker(): boolean {
   return isStaff();
 }
@@ -127,4 +117,68 @@ export function hasFullInventoryAccess(): boolean {
 
 export function roleLabel(role: string): string {
   return (role || '').toUpperCase().replace(/_/g, ' ');
+}
+
+
+// Active (non-COMPLETED) tasks that reference a specific record
+function activeTargets(tasks: Task[]): Set<string> {
+  const set = new Set<string>();
+
+  tasks.forEach((task) => {
+    if (
+      task.status === 'COMPLETED' ||
+      !task.target_id ||
+      task.target_type === 'NONE'
+    ) {
+      return;
+    }
+
+    set.add(`${task.target_type}:${task.target_id}`);
+  });
+
+  return set;
+}
+
+// Active tasks that authorize creating a record of the given type
+function activeCreateTypes(tasks: Task[]): Set<string> {
+  const set = new Set<string>();
+
+  tasks.forEach((task) => {
+    if (
+      task.status === 'COMPLETED' ||
+      task.target_type === 'NONE'
+    ) {
+      return;
+    }
+
+    set.add(task.target_type);
+  });
+
+  return set;
+}
+
+// Whether a worker may edit / delete / adjust the given record.
+// Staff must be covered by an active task; managers use canManage instead.
+export function canEditRecord(
+  tasks: Task[],
+  targetType: TaskTargetType,
+  targetId: string
+): boolean {
+  if (!isWorker()) {
+    return false;
+  }
+
+  return activeTargets(tasks).has(`${targetType}:${targetId}`);
+}
+
+
+export function canCreateRecord(
+  tasks: Task[],
+  targetType: TaskTargetType
+): boolean {
+  if (!isWorker()) {
+    return false;
+  }
+
+  return activeCreateTypes(tasks).has(targetType);
 }

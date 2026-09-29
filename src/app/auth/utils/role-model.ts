@@ -1,8 +1,3 @@
-// The role vocabulary is kept in its own module with no imports so that both
-// auth-state.ts and roles.ts can depend on it. Putting it in roles.ts would
-// create a cycle: auth-state reads roles at module-eval time, roles reads the
-// currentUser signal.
-
 export type AppRole =
   | 'SUPER_ADMIN'
   | 'INVENTORY_MANAGER'
@@ -34,9 +29,7 @@ export const STAFF_ROLES: AppRole[] = [
   ORDER_STAFF_ROLE
 ];
 
-// Narrows an arbitrary string to a known role. Anything the backend sends that
-// is not one of ALL_ROLES is rejected rather than trusted, so an unrecognised
-// value grants nothing.
+
 export function parseRole(raw: string | null | undefined): AppRole | null {
 
   if (!raw) {

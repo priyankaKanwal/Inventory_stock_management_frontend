@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { forkJoin } from 'rxjs';
 import { DashboardService } from '../../services/dashboard.service';
+import { ProductService, Product, ProductsResponse } from '../../services/product.service';
 import { TaskService, Task } from '../../services/task.service';
 import { OrderService, Order } from '../../services/order.service';
-import { CustomerService, Customer } from '../../services/customers.service';
-import { canViewOrders } from '../../auth/utils/roles';
+import { canViewOrders, canViewProducts, isSuperAdmin } from '../../auth/utils/role-auth';
 
 export interface DashboardSummary {
   total_products: number;
@@ -12,6 +13,9 @@ export interface DashboardSummary {
   low_stock_count: number;
   out_of_stock_count: number;
 }
+
+const LOW_STOCK = 'low stock';
+const OUT_OF_STOCK = 'out of stock';
 
 @Component({
   selector: 'app-dashboard',
@@ -24,6 +28,14 @@ export class DashboardComponent implements OnInit {
   tasks: Task[] = [];
   orders: Order[] = [];
 
+  lowStockProducts: Product[] = [];
+  outOfStockProducts: Product[] = [];
+  stockAlertsTab: 'low' | 'out' = 'low';
+  stockAlertsLoading = true;
+  stockAlertsError = '';
+
+  readonly stockAlertLimit = 5;
+
   isLoading = true;
   errorMessage = '';
 
@@ -31,13 +43,40 @@ export class DashboardComponent implements OnInit {
     return canViewOrders();
   }
 
-  private customerNames = new Map<string, string>();
+  get canViewStockAlerts(): boolean {
+    return canViewProducts();
+  }
+
+  // Tasks are assigned to workers, so a super admin has nothing pending.
+  get canViewTasksSection(): boolean {
+    return !isSuperAdmin();
+  }
+
+  get activeStockProducts(): Product[] {
+    return this.stockAlertsTab === 'low' ? this.lowStockProducts : this.outOfStockProducts;
+  }
+
+  get activeStockEmptyLabel(): string {
+    return this.stockAlertsTab === 'low'
+      ? 'No low stock products.'
+      : 'No out of stock products.';
+  }
+
+  get activeStockTotal(): number {
+    if (!this.summary) {
+      return 0;
+    }
+
+    return this.stockAlertsTab === 'low'
+      ? this.summary.low_stock_count
+      : this.summary.out_of_stock_count;
+  }
 
   constructor(
     private dashboardService: DashboardService,
     private taskService: TaskService,
     private orderService: OrderService,
-    private customerService: CustomerService
+    private productService: ProductService
   ) {}
 
   ngOnInit(): void {
@@ -60,31 +99,21 @@ export class DashboardComponent implements OnInit {
     });
 
     this.loadMyTasks();
-    this.loadCustomers();
     this.loadRecentOrders();
+    this.loadStockAlerts();
   }
 
   loadMyTasks(): void {
+    if (!this.canViewTasksSection) {
+      return;
+    }
+
     this.taskService.getMyTasks().subscribe({
       next: (tasks) => {
         this.tasks = (tasks || []).slice(0, 5);
       },
       error: () => {
         this.tasks = [];
-      }
-    });
-  }
-
-  loadCustomers(): void {
-    this.customerService.getAllCustomers().subscribe({
-      next: (customers) => {
-        this.customerNames.clear();
-        (customers || []).forEach((c: Customer) => {
-          this.customerNames.set(c.id, c.name);
-        });
-      },
-      error: () => {
-        this.customerNames.clear();
       }
     });
   }
@@ -104,12 +133,125 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  customerName(id: string): string {
-    return this.customerNames.get(id) || '#'.concat(id);
+  loadStockAlerts(): void {
+
+    if (!this.canViewStockAlerts) {
+      this.stockAlertsLoading = false;
+      return;
+    }
+
+    forkJoin({
+      low: this.productService.getProducts({
+        page: 1,
+        pageSize: this.stockAlertLimit,
+        stockStatus: LOW_STOCK
+      }),
+      out: this.productService.getProducts({
+        page: 1,
+        pageSize: this.stockAlertLimit,
+        stockStatus: OUT_OF_STOCK
+      })
+    }).subscribe({
+
+      next: ({ low, out }) => {
+
+        if (this.isFilteredByStatus(low, LOW_STOCK) && this.isFilteredByStatus(out, OUT_OF_STOCK)) {
+          this.lowStockProducts = this.firstAlerts(low.items, LOW_STOCK);
+          this.outOfStockProducts = this.firstAlerts(out.items, OUT_OF_STOCK);
+          this.stockAlertsLoading = false;
+          return;
+        }
+
+        // The API accepted the request but ignored stock_status, so fall back to
+        // a single unfiltered page and split it here.
+        this.loadStockAlertsUnfiltered();
+      },
+
+      error: () => {
+        this.stockAlertsError = 'Unable to load stock alerts.';
+        this.stockAlertsLoading = false;
+      }
+
+    });
+  }
+
+  selectStockTab(tab: 'low' | 'out'): void {
+    this.stockAlertsTab = tab;
+  }
+
+  stockTabClass(tab: 'low' | 'out'): string {
+    const base = 'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-150';
+
+    return this.stockAlertsTab === tab
+      ? `${base} bg-white text-slate-900 shadow-sm`
+      : `${base} text-slate-500 hover:text-slate-900`;
+  }
+
+  getStatusLabel(status: string): string {
+    switch ((status || '').toLowerCase()) {
+      case 'in stock':
+        return 'In Stock';
+      case 'low stock':
+        return 'Low Stock';
+      case 'out of stock':
+        return 'Out of Stock';
+      default:
+        return status;
+    }
+  }
+
+  stockStatusClass(status: string): string {
+    const base = 'inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-4 sm:px-2 sm:py-1 sm:text-xs';
+
+    switch ((status || '').toLowerCase()) {
+      case 'low stock':
+        return `${base} bg-amber-100 text-amber-700`;
+      case 'out of stock':
+        return `${base} bg-red-100 text-red-700`;
+      default:
+        return `${base} bg-slate-100 text-slate-600`;
+    }
+  }
+
+  private loadStockAlertsUnfiltered(): void {
+    this.productService.getProducts({ page: 1, pageSize: 100 }).subscribe({
+      next: (response) => {
+        this.lowStockProducts = this.firstAlerts(response.items, LOW_STOCK);
+        this.outOfStockProducts = this.firstAlerts(response.items, OUT_OF_STOCK);
+        this.stockAlertsLoading = false;
+      },
+      error: () => {
+        this.stockAlertsError = 'Unable to load stock alerts.';
+        this.stockAlertsLoading = false;
+      }
+    });
+  }
+
+  // A response is only treated as filtered when every returned row carries the
+  // requested status. An empty page counts as filtered only when the total is
+  // zero too, otherwise the backend simply ignored the query param.
+  private isFilteredByStatus(response: ProductsResponse, status: string): boolean {
+    const items = response.items || [];
+
+    if (items.length === 0) {
+      return (response.total ?? 0) === 0;
+    }
+
+    return items.every(product => (product.stock_status || '').toLowerCase() === status);
+  }
+
+  private firstAlerts(items: Product[] | null | undefined, status: string): Product[] {
+    return (items || [])
+      .filter(product => (product.stock_status || '').toLowerCase() === status)
+      .slice(0, this.stockAlertLimit);
   }
 
   totalInr(order: Order): string {
     return this.formatINR(order.total_amount);
+  }
+
+  isDelivered(order: Order): boolean {
+    return order.status === 'DELIVERED';
   }
 
   stockValueInr(): string {
@@ -130,23 +272,25 @@ export class DashboardComponent implements OnInit {
   }
 
   statusClass(status: string): string {
+    const base = 'inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-4 sm:px-2 sm:py-1 sm:text-xs';
+
     switch (status) {
       case 'DELIVERED':
-        return 'rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700';
+        return `${base} bg-emerald-100 text-emerald-700`;
       case 'CONFIRMED':
       case 'PROCESSING':
       case 'PACKED':
       case 'SHIPPED':
       case 'OUT_FOR_DELIVERY':
-        return 'rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700';
+        return `${base} bg-blue-100 text-blue-700`;
       case 'AWAITING_STOCK':
       case 'SUPPLIER_ORDER_PLACED':
       case 'STOCK_RECEIVED':
-        return 'rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700';
+        return `${base} bg-amber-100 text-amber-700`;
       case 'CANCELLED':
-        return 'rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700';
+        return `${base} bg-red-100 text-red-700`;
       default:
-        return 'rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600';
+        return `${base} bg-slate-100 text-slate-600`;
     }
   }
 }

@@ -1,8 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { SupplierService } from '../../services/supplier.service';
 import { TaskService, Task } from '../../services/task.service';
-import { hasFullInventoryAccess, isWorker } from '../../auth/utils/roles';
-import { canCreateRecord } from '../../auth/utils/task-access';
+import { canCreateRecord, hasFullInventoryAccess, isWorker } from '../../auth/utils/role-auth';
 
 //supplier interface
 export interface Supplier {
@@ -27,6 +26,10 @@ export class SuppliersComponent implements OnInit {
   //array to hold suppliers
   suppliers: Supplier[] = [];
 
+  // Every supplier across all pages, used for client side search so results
+  // are not limited to the current page of the server side paginated list.
+  allSuppliers: Supplier[] = [];
+
   // Pagination state
   currentPage = 1;
   pageSize = 10;
@@ -48,6 +51,20 @@ export class SuppliersComponent implements OnInit {
   ngOnInit(): void {
     this.loadMyTasks();
     this.getSuppliers();
+    this.loadAllSuppliers();
+  }
+
+  // Load every supplier across all pages so search covers the whole table.
+  loadAllSuppliers(): void {
+    this.supplierService.getAllSuppliers().subscribe({
+      next: (suppliers) => {
+        this.allSuppliers = suppliers || [];
+      },
+      // Search falls back to the current page if this fails
+      error: (error) => {
+        console.error('Error loading all suppliers:', error);
+      }
+    });
   }
 
   loadMyTasks(): void {

@@ -1,125 +1,67 @@
 import { signal } from '@angular/core';
-
-import { isTokenExpired, roleFromToken } from './jwt';
 import { AppRole, parseRole } from './role-model';
 
 export { AppRole } from './role-model';
 
-export const STORAGE_KEY = 'stockflow_user_data';
-
-const STORAGE_PREFIX = 'stockflow_';
+// =====================================================
+// USER
+// =====================================================
 
 export interface AuthUser {
   access_token: string;
   username: string;
-  // Always derived from the token's role claim, never read back from storage.
   role: AppRole;
   user_id?: string;
 }
 
-// Written by the pre-`stockflow_user_data` session shape. Cleared on boot.
-const LEGACY_KEYS = ['access_token', 'role', 'username', 'user_id'];
+// =====================================================
+// STORAGE
+// =====================================================
 
-// Removes session keys this app no longer reads, so a hand-made key such as
-// `stockflow_access_token` or the old flat keys cannot be mistaken for live
-// state. `sidebar_sections` does not match the prefix and is left alone.
-function sweepStaleKeys(): void {
+export const STORAGE_KEY = 'stockflow_user_data';
 
-  const stale: string[] = [];
 
-  for (let index = 0; index < localStorage.length; index++) {
+// =====================================================
+// CURRENT USER
+// =====================================================
 
-    const key = localStorage.key(index);
+// When the app starts, try to get the user from localStorage.
+const storedUser = localStorage.getItem(STORAGE_KEY);
 
-    if (key === null) {
-      continue;
-    }
+let initialUser: AuthUser | null = null;
 
-    const isStray = key.startsWith(STORAGE_PREFIX) && key !== STORAGE_KEY;
-    const isLegacy = (LEGACY_KEYS as string[]).includes(key);
-
-    if (isStray || isLegacy) {
-      stale.push(key);
-    }
-  }
-
-  stale.forEach(key => localStorage.removeItem(key));
-}
-
-function writeStoredUser(user: AuthUser): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-}
-
-function sameStoredUser(a: AuthUser, b: AuthUser): boolean {
-  return (
-    a.access_token === b.access_token &&
-    a.username === b.username &&
-    a.role === b.role &&
-    a.user_id === b.user_id
-  );
-}
-
-function readStoredUser(): AuthUser | null {
-
-  const raw = localStorage.getItem(STORAGE_KEY);
-
-  if (!raw) {
-    return null;
-  }
-
-  let parsed: Partial<AuthUser>;
-
+if (storedUser) {
   try {
-    parsed = JSON.parse(raw) as Partial<AuthUser>;
+    const user = JSON.parse(storedUser) as AuthUser;
+
+    if (
+      user.access_token &&
+      !isTokenExpired(user.access_token)
+    ) {
+      const role = roleFromToken(user.access_token);
+
+      if (role) {
+        initialUser = {
+          ...user,
+          role
+        };
+      }
+    }
   } catch {
-    // Corrupted blob: drop it rather than leaving it to fail on every read.
     localStorage.removeItem(STORAGE_KEY);
-    return null;
   }
-
-  const accessToken =
-    typeof parsed?.access_token === 'string' ? parsed.access_token : '';
-
-  if (!accessToken || isTokenExpired(accessToken)) {
-    localStorage.removeItem(STORAGE_KEY);
-    return null;
-  }
-
-  // The role comes from the token, so a value edited into the blob is ignored.
-  const role = roleFromToken(accessToken);
-
-  if (!role) {
-    localStorage.removeItem(STORAGE_KEY);
-    return null;
-  }
-
-  const user: AuthUser = {
-    access_token: accessToken,
-    username: typeof parsed.username === 'string' ? parsed.username : '',
-    role
-  };
-
-  if (typeof parsed.user_id === 'string') {
-    user.user_id = parsed.user_id;
-  }
-
-  // Rewrite when the stored mirror disagreed with the token, so a hand-edited
-  // role visibly snaps back instead of persisting.
-  if (!sameStoredUser(user, parsed as AuthUser)) {
-    writeStoredUser(user);
-  }
-
-  return user;
 }
 
-sweepStaleKeys();
+// Angular signal containing the current logged-in user
+const session = signal<AuthUser | null>(initialUser);
 
-const session = signal<AuthUser | null>(readStoredUser());
-
-// Single source of truth for the signed-in user. A module-level signal rather
-// than an injectable service so the route guards and the HTTP interceptor can
-// read it synchronously without inject().
+// Other files can READ the user
 export const currentUser = session.asReadonly();
+
+
+// =====================================================
+// LOGIN
+// =====================================================
 
 export function startSession(
   accessToken: string,
@@ -128,24 +70,29 @@ export function startSession(
   userId?: string
 ): boolean {
 
-  if (!accessToken || isTokenExpired(accessToken)) {
+  // Token must exist and must not be expired
+  if (
+    !accessToken ||
+    isTokenExpired(accessToken)
+  ) {
     return false;
   }
 
+  // Get role directly from JWT
   const role = roleFromToken(accessToken);
 
   if (!role) {
     return false;
   }
 
-  // The response role is informational only. A disagreement means the backend
-  // and its own token are inconsistent, which is worth surfacing but should
-  // not lock the user out.
+  // Check whether backend response role matches JWT role
   if (parseRole(responseRole) !== role) {
     console.warn(
-      '[auth] Login response role does not match the role in the access ' +
-      'token. Using the token role.',
-      { responseRole, tokenRole: role }
+      '[auth] Response role does not match JWT role. Using JWT role.',
+      {
+        responseRole,
+        tokenRole: role
+      }
     );
   }
 
@@ -159,42 +106,279 @@ export function startSession(
     user.user_id = userId;
   }
 
-  writeStoredUser(user);
+  // Save user
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(user)
+  );
+
+  // Update current user
   session.set(user);
 
   return true;
 }
 
-// Called by the auth interceptor when the access token is rotated. Returns false
-// when the new token is unusable or carries a different role, in which case the
-// caller must end the session rather than keep a self-inconsistent one.
-export function updateAccessToken(accessToken: string): boolean {
+
+// =====================================================
+// UPDATE ACCESS TOKEN
+// =====================================================
+
+export function updateAccessToken(
+  accessToken: string
+): boolean {
 
   const user = session();
 
-  if (!user || !accessToken || isTokenExpired(accessToken)) {
+  if (
+    !user ||
+    !accessToken ||
+    isTokenExpired(accessToken)
+  ) {
     return false;
   }
 
+  // Get role from new token
   const role = roleFromToken(accessToken);
 
+  // The new token must have the same role
   if (!role || role !== user.role) {
     return false;
   }
 
-  const updated: AuthUser = { ...user, access_token: accessToken };
+  const updated: AuthUser = {
+    ...user,
+    access_token: accessToken
+  };
 
-  writeStoredUser(updated);
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(updated)
+  );
+
   session.set(updated);
 
   return true;
 }
 
+
+// =====================================================
+// GET ACCESS TOKEN
+// =====================================================
+
 export function getAccessToken(): string | null {
   return session()?.access_token ?? null;
 }
 
+
+// =====================================================
+// CHECK STORED SESSION
+// =====================================================
+
+export function hasStoredSession(): boolean {
+  return session() !== null;
+}
+
+
+// =====================================================
+// RESTORE SESSION
+// =====================================================
+
+export function restoreSession(
+  accessToken: string
+): boolean {
+
+  if (
+    !accessToken ||
+    isTokenExpired(accessToken)
+  ) {
+    return false;
+  }
+
+  const role = roleFromToken(accessToken);
+
+  if (!role) {
+    return false;
+  }
+
+  const storedUser = localStorage.getItem(STORAGE_KEY);
+
+  if (!storedUser) {
+    return false;
+  }
+
+  try {
+    const user = JSON.parse(storedUser) as AuthUser;
+
+    // Make sure the role from the new token
+    // matches the existing user's role.
+    if (user.role !== role) {
+      return false;
+    }
+
+    const restoredUser: AuthUser = {
+      ...user,
+      access_token: accessToken,
+      role
+    };
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(restoredUser)
+    );
+
+    session.set(restoredUser);
+
+    return true;
+
+  } catch {
+    return false;
+  }
+}
+
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
 export function clearSession(): void {
+
   localStorage.removeItem(STORAGE_KEY);
+
   session.set(null);
+}
+
+
+// =====================================================
+// JWT: DECODE PAYLOAD
+// =====================================================
+
+export function decodeJwtPayload(
+  token: string
+): Record<string, unknown> | null {
+
+  if (!token) {
+    return null;
+  }
+
+  const segments = token.split('.');
+
+  // JWT = header.payload.signature
+  if (segments.length !== 3) {
+    return null;
+  }
+
+  try {
+    const encoded = segments[1];
+
+    if (!encoded) {
+      return null;
+    }
+
+    // Convert Base64URL to Base64
+    const base64 = encoded
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    // Add padding
+    const padded = base64 +
+      '='.repeat(
+        (4 - (base64.length % 4)) % 4
+      );
+
+    // Decode payload
+    const binary = atob(padded);
+
+    const bytes = Uint8Array.from(
+      binary,
+      char => char.charCodeAt(0)
+    );
+
+    const json = new TextDecoder().decode(bytes);
+
+    const payload = JSON.parse(json);
+
+    if (
+      typeof payload !== 'object' ||
+      payload === null
+    ) {
+      return null;
+    }
+
+    return payload as Record<string, unknown>;
+
+  } catch {
+    return null;
+  }
+}
+
+
+// =====================================================
+// JWT: GET ROLE
+// =====================================================
+
+export function roleFromToken(
+  token: string
+): AppRole | null {
+
+  const payload = decodeJwtPayload(token);
+
+  if (!payload) {
+    return null;
+  }
+
+  const role = payload['role'];
+
+  return parseRole(
+    typeof role === 'string'
+      ? role
+      : null
+  );
+}
+
+
+// =====================================================
+// JWT: GET EXPIRY
+// =====================================================
+
+export function tokenExpiry(
+  token: string
+): number | null {
+
+  const payload = decodeJwtPayload(token);
+
+  if (!payload) {
+    return null;
+  }
+
+  const exp = payload['exp'];
+
+  if (
+    typeof exp !== 'number' ||
+    !Number.isFinite(exp)
+  ) {
+    return null;
+  }
+
+  // JWT expiry is in seconds.
+  // JavaScript uses milliseconds.
+  return exp * 1000;
+}
+
+
+// =====================================================
+// JWT: CHECK EXPIRY
+// =====================================================
+
+export function isTokenExpired(
+  token: string
+): boolean {
+
+  const expiry = tokenExpiry(token);
+
+  // No valid expiry = expired
+  if (expiry === null) {
+    return true;
+  }
+
+  return Date.now() >= expiry;
 }
