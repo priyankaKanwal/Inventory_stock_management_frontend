@@ -156,7 +156,11 @@ export class MyTasksComponent implements OnInit, OnDestroy {
           ? 'categories'
           : task.target_type === 'SUPPLIER'
             ? 'suppliers'
-            : null;
+            : task.target_type === 'CUSTOMER'
+              ? 'customers'
+              : task.target_type === 'ORDER'
+                ? 'orders'
+                : null;
 
     return base ? ['/', base] : null;
   }

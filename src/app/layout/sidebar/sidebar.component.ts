@@ -3,10 +3,10 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import {
   canManageCategories,
-  canManageCustomers,
   canManageSuppliers,
   canManageTasks,
   canViewCategories,
+  canViewCustomers,
   canViewOrders,
   canViewPredictions,
   canViewProducts,
@@ -76,7 +76,7 @@ export class SidebarComponent {
   }
 
   get canViewCustomers(): boolean {
-    return canManageCustomers();
+    return canViewCustomers();
   }
 
   get canManageTaskDelegation(): boolean {
@@ -103,7 +103,7 @@ export class SidebarComponent {
   }
 
   get canViewSalesSection(): boolean {
-    return canViewOrders() || canManageCustomers();
+    return canViewOrders() || canViewCustomers();
   }
 
   get canViewAiSection(): boolean {

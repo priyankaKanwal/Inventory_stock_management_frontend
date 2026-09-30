@@ -14,6 +14,8 @@ import { User } from '../../../../services/user.service';
 import { ProductService } from '../../../../services/product.service';
 import { CategoryService } from '../../../../services/category.service';
 import { SupplierService } from '../../../../services/supplier.service';
+import { CustomerService, Customer } from '../../../../services/customers.service';
+import { OrderService, Order } from '../../../../services/order.service';
 
 import { Product } from '../../../products/products.component';
 import { Category } from '../../../categories/categories.component';
@@ -45,13 +47,17 @@ export class TaskFormComponent implements OnInit {
   products: Product[] = [];
   categories: Category[] = [];
   suppliers: Supplier[] = [];
+  customers: Customer[] = [];
+  orders: Order[] = [];
 
   constructor(
     private fb: FormBuilder,
     private taskService: TaskService,
     private productService: ProductService,
     private categoryService: CategoryService,
-    private supplierService: SupplierService
+    private supplierService: SupplierService,
+    private customerService: CustomerService,
+    private orderService: OrderService
   ) { }
 
   ngOnInit(): void {
@@ -87,7 +93,27 @@ export class TaskFormComponent implements OnInit {
       return this.suppliers.map((s) => ({ id: s.id, name: s.name }));
     }
 
+    if (type === 'CUSTOMER') {
+      return this.customers.map((c) => ({ id: c.id, name: c.name }));
+    }
+
+    if (type === 'ORDER') {
+      return this.orders.map((o) => ({ id: o.id, name: `#${o.id.substring(0, 8)} (${o.status})` }));
+    }
+
     return [];
+  }
+
+  formatTargetType(type: TaskTargetType): string {
+    switch (type) {
+      case 'NONE': return 'None (general task)';
+      case 'PRODUCT': return 'Product';
+      case 'CATEGORY': return 'Category';
+      case 'SUPPLIER': return 'Supplier';
+      case 'CUSTOMER': return 'Customer';
+      case 'ORDER': return 'Order';
+      default: return type;
+    }
   }
 
   toDateInput(iso: string): string {
@@ -129,6 +155,24 @@ export class TaskFormComponent implements OnInit {
       },
       error: () => {
         this.suppliers = [];
+      }
+    });
+
+    this.customerService.getCustomers({ page: 1, pageSize: 50 }).subscribe({
+      next: (response) => {
+        this.customers = response.items || [];
+      },
+      error: () => {
+        this.customers = [];
+      }
+    });
+
+    this.orderService.getOrders({ page: 1, pageSize: 50 }).subscribe({
+      next: (response) => {
+        this.orders = response.items || [];
+      },
+      error: () => {
+        this.orders = [];
       }
     });
   }

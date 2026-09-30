@@ -6,7 +6,7 @@ import { ApiService, Paginated } from './api.service';
 
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH';
 export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
-export type TaskTargetType = 'PRODUCT' | 'CATEGORY' | 'SUPPLIER' | 'NONE';
+export type TaskTargetType = 'PRODUCT' | 'CATEGORY' | 'SUPPLIER' | 'CUSTOMER' | 'ORDER' | 'NONE';
 
 export interface Task {
   id: string;

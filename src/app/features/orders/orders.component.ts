@@ -7,9 +7,13 @@ import {
   Order,
   OrderStatus
 } from '../../services/order.service';
-import { CustomerService, Customer } from '../../services/customers.service';
+import {
+  CustomerService,
+  Customer
+} from '../../services/customers.service';
 import { ProductService, Product } from '../../services/product.service';
-import { canManageOrders, canTransitionOrderStatus } from '../../auth/utils/role-auth';
+import { canCreateRecord, canManageOrders, canTransitionOrderStatus, isWorker } from '../../auth/utils/role-auth';
+import { TaskService, Task } from '../../services/task.service';
 
 // Valid transitions enforced by the backend state machine.
 const NEXT_ORDER_STATUSES: Record<OrderStatus, OrderStatus[]> = {
@@ -35,6 +39,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
   orders: Order[] = [];
   customers: Customer[] = [];
   products: Product[] = [];
+  myTasks: Task[] = [];
 
   // Pagination state
   currentPage = 1;
@@ -70,6 +75,10 @@ export class OrdersComponent implements OnInit, OnDestroy {
     return canManageOrders();
   }
 
+  canCreateOrder(): boolean {
+    return this.canManage || canCreateRecord(this.myTasks, 'ORDER');
+  }
+
   get canTransition(): boolean {
     return canTransitionOrderStatus();
   }
@@ -86,13 +95,32 @@ export class OrdersComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private orderService: OrderService,
     private customerService: CustomerService,
-    private productService: ProductService
+    private productService: ProductService,
+    private taskService: TaskService
   ) { }
 
   ngOnInit(): void {
+    this.loadMyTasks();
     this.loadOrders();
     this.loadCustomers();
     this.loadProducts();
+  }
+
+  loadMyTasks(): void {
+    if (!isWorker()) {
+      return;
+    }
+
+    this.subscriptions.push(
+      this.taskService.getMyTasks().subscribe({
+        next: (tasks) => {
+          this.myTasks = tasks || [];
+        },
+        error: () => {
+          this.myTasks = [];
+        }
+      })
+    );
   }
 
   get items(): FormArray {

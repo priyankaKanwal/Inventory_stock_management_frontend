@@ -3,7 +3,7 @@ import { Subscription } from 'rxjs';
 
 import { TaskService, Task, TaskStatus, TaskTargetType } from '../../../../services/task.service';
 import { UserService, User } from '../../../../services/user.service';
-import { isSuperAdmin } from '../../../../auth/utils/role-auth';
+import { isInventoryManager, isOrderManager, isSuperAdmin } from '../../../../auth/utils/role-auth';
 
 type TaskFilter = TaskStatus | '';
 
@@ -46,7 +46,13 @@ export class ManageTasksComponent implements OnInit, OnDestroy {
   }
 
   get targetTypes(): TaskTargetType[] {
-    return ['NONE', 'PRODUCT', 'CATEGORY', 'SUPPLIER'];
+    if (isOrderManager()) {
+      return ['NONE', 'CUSTOMER', 'ORDER'];
+    }
+    if (isInventoryManager()) {
+      return ['NONE', 'PRODUCT', 'CATEGORY', 'SUPPLIER'];
+    }
+    return ['NONE', 'PRODUCT', 'CATEGORY', 'SUPPLIER', 'CUSTOMER', 'ORDER'];
   }
 
   get filteredTasks(): Task[] {

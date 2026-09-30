@@ -7,7 +7,8 @@ import {
   Customer,
   CustomerPayload
 } from '../../services/customers.service';
-import { canManageCustomers } from '../../auth/utils/role-auth';
+import { canCreateRecord, canEditRecord, canManageCustomers, isWorker } from '../../auth/utils/role-auth';
+import { TaskService, Task } from '../../services/task.service';
 
 @Component({
   selector: 'app-customers',
@@ -16,6 +17,7 @@ import { canManageCustomers } from '../../auth/utils/role-auth';
 export class CustomersComponent implements OnInit, OnDestroy {
 
   customers: Customer[] = [];
+  myTasks: Task[] = [];
 
   // Pagination state
   currentPage = 1;
@@ -41,6 +43,14 @@ export class CustomersComponent implements OnInit, OnDestroy {
     return canManageCustomers();
   }
 
+  canCreateCustomer(): boolean {
+    return this.canManage || canCreateRecord(this.myTasks, 'CUSTOMER');
+  }
+
+  canEditCustomer(customer: Customer): boolean {
+    return this.canManage || canEditRecord(this.myTasks, 'CUSTOMER', customer.id);
+  }
+
   form = this.fb.group({
     name: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
@@ -50,11 +60,30 @@ export class CustomersComponent implements OnInit, OnDestroy {
 
   constructor(
     private fb: FormBuilder,
-    private customerService: CustomerService
+    private customerService: CustomerService,
+    private taskService: TaskService
   ) { }
 
   ngOnInit(): void {
+    this.loadMyTasks();
     this.loadCustomers();
+  }
+
+  loadMyTasks(): void {
+    if (!isWorker()) {
+      return;
+    }
+
+    this.subscriptions.push(
+      this.taskService.getMyTasks().subscribe({
+        next: (tasks) => {
+          this.myTasks = tasks || [];
+        },
+        error: () => {
+          this.myTasks = [];
+        }
+      })
+    );
   }
 
   loadCustomers(): void {

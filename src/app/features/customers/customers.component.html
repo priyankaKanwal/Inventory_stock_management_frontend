@@ -6,7 +6,7 @@
     </div>
 
     <button
-      *ngIf="canManage"
+      *ngIf="canCreateCustomer()"
       type="button"
       (click)="openCreate()"
       class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -64,7 +64,7 @@
         </p>
       </div>
 
-      <div *ngIf="canManage" class="mt-4 flex justify-end border-t border-slate-100 pt-3">
+      <div *ngIf="canEditCustomer(customer)" class="mt-4 flex justify-end border-t border-slate-100 pt-3">
         <button
           type="button"
           (click)="openEdit(customer)"

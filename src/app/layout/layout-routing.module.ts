@@ -136,7 +136,7 @@ const routes: Routes = [
         canActivate: [roleGuard],
 
         data: {
-          roles: [SUPER_ADMIN_ROLE, ORDER_MANAGER_ROLE]
+          roles: [SUPER_ADMIN_ROLE, ORDER_MANAGER_ROLE, ORDER_STAFF_ROLE]
         },
 
         loadChildren: () =>

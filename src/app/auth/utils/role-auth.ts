@@ -107,6 +107,10 @@ export function canTransitionOrderStatus(): boolean {
   return isSuperAdmin() || isOrderManager() || isOrderStaff();
 }
 
+export function canViewCustomers(): boolean {
+  return isSuperAdmin() || isOrderManager() || isOrderStaff();
+}
+
 export function canManageCustomers(): boolean {
   return isSuperAdmin() || isOrderManager();
 }
