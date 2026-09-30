@@ -145,10 +145,7 @@ export class MyTasksComponent implements OnInit, OnDestroy {
 
   // Returns the route to the linked record's list page
   recordTarget(task: Task): string[] | null {
-    if (
-      task.target_type === 'NONE' ||
-      !task.target_id
-    ) {
+    if (!task || task.target_type === 'NONE') {
       return null;
     }
 
@@ -157,9 +154,11 @@ export class MyTasksComponent implements OnInit, OnDestroy {
         ? 'products'
         : task.target_type === 'CATEGORY'
           ? 'categories'
-          : 'suppliers';
+          : task.target_type === 'SUPPLIER'
+            ? 'suppliers'
+            : null;
 
-    return ['/', base];
+    return base ? ['/', base] : null;
   }
 
   targetLabel(type: string): string {

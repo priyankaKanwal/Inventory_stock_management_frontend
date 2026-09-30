@@ -6,9 +6,11 @@ import {
   canManageCustomers,
   canManageSuppliers,
   canManageTasks,
+  canViewCategories,
   canViewOrders,
   canViewPredictions,
   canViewProducts,
+  canViewSuppliers,
   currentRole,
   isSuperAdmin
 } from '../../auth/utils/role-auth';
@@ -62,11 +64,11 @@ export class SidebarComponent {
   }
 
   get canViewCategories(): boolean {
-    return canManageCategories();
+    return canViewCategories();
   }
 
   get canViewSuppliers(): boolean {
-    return canManageSuppliers();
+    return canViewSuppliers();
   }
 
   get canViewOrders(): boolean {
@@ -97,7 +99,7 @@ export class SidebarComponent {
   }
 
   get canViewInventorySection(): boolean {
-    return canViewProducts() || canManageCategories() || canManageSuppliers();
+    return canViewProducts() || canViewCategories() || canViewSuppliers();
   }
 
   get canViewSalesSection(): boolean {

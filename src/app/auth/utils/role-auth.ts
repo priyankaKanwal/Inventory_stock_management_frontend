@@ -18,7 +18,7 @@ export {
 export const ROUTE_ROLES: Record<string, AppRole[]> = {
   superAdmin: [SUPER_ADMIN_ROLE],
   managers: [SUPER_ADMIN_ROLE, ...MANAGER_ROLES],
-  inventory: [SUPER_ADMIN_ROLE, INVENTORY_MANAGER_ROLE],
+  inventory: [SUPER_ADMIN_ROLE, INVENTORY_MANAGER_ROLE, INVENTORY_STAFF_ROLE],
   orders: [SUPER_ADMIN_ROLE, ORDER_MANAGER_ROLE, ORDER_STAFF_ROLE, INVENTORY_MANAGER_ROLE],
   predictions: [SUPER_ADMIN_ROLE, ORDER_MANAGER_ROLE, ORDER_STAFF_ROLE, INVENTORY_MANAGER_ROLE],
   products: [SUPER_ADMIN_ROLE, INVENTORY_MANAGER_ROLE, INVENTORY_STAFF_ROLE, ORDER_MANAGER_ROLE],
@@ -79,8 +79,16 @@ export function canViewProducts(): boolean {
   return isSuperAdmin() || isInventoryManager() || isInventoryStaff() || isOrderManager();
 }
 
+export function canViewCategories(): boolean {
+  return isSuperAdmin() || isInventoryManager() || isInventoryStaff();
+}
+
 export function canManageCategories(): boolean {
   return isSuperAdmin() || isInventoryManager();
+}
+
+export function canViewSuppliers(): boolean {
+  return isSuperAdmin() || isInventoryManager() || isInventoryStaff();
 }
 
 export function canManageSuppliers(): boolean {
