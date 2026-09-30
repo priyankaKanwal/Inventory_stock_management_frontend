@@ -7,7 +7,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
 
-import { SessionService } from '../services/session.service';
+import { SessionService } from '../../services/session.service';
 import { getAccessToken } from '../utils/auth-state';
 
 const AUTH_PATHS = [

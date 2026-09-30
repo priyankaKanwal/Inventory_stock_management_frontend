@@ -6,7 +6,7 @@ import { RouterModule } from '@angular/router';
 import { AppComponent } from './app.component';
 import { routes } from './app.routes';
 import { authInterceptor } from './auth/interceptors/auth.interceptor';
-import { SessionService, sessionInitFactory } from './auth/services/session.service';
+import { SessionService, sessionInitFactory } from './services/session.service';
 
 @NgModule({
   declarations: [AppComponent],
