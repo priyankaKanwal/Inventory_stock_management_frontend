@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import {
@@ -17,7 +18,14 @@ import { TaskService, Task } from '../../services/task.service';
 export class CustomersComponent implements OnInit, OnDestroy {
 
   customers: Customer[] = [];
+  allCustomers: Customer[] = [];
   myTasks: Task[] = [];
+
+  // Search state
+  searchQuery = '';
+  searchPage = 1;
+  showSuggestions = false;
+  selectedSuggestionIndex = -1;
 
   // Pagination state
   currentPage = 1;
@@ -61,12 +69,24 @@ export class CustomersComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private customerService: CustomerService,
-    private taskService: TaskService
+    private taskService: TaskService,
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit(): void {
     this.loadMyTasks();
     this.loadCustomers();
+    this.loadAllCustomers();
+
+    this.subscriptions.push(
+      this.route.queryParamMap.subscribe((params) => {
+        const search = params.get('search');
+        if (search !== null) {
+          this.searchQuery = search;
+          this.searchPage = 1;
+        }
+      })
+    );
   }
 
   loadMyTasks(): void {
@@ -112,8 +132,137 @@ export class CustomersComponent implements OnInit, OnDestroy {
     );
   }
 
+  loadAllCustomers(): void {
+    this.subscriptions.push(
+      this.customerService.getAllCustomers().subscribe({
+        next: (customers) => {
+          this.allCustomers = customers || [];
+        },
+        error: (error) => {
+          console.error('Error loading all customers:', error);
+        }
+      })
+    );
+  }
+
+  // Preferred search dataset: allCustomers across pages, fallback to current page
+  private get searchSource(): Customer[] {
+    return this.allCustomers.length ? this.allCustomers : this.customers;
+  }
+
+  get isFiltering(): boolean {
+    return this.searchQuery.trim().length > 0;
+  }
+
+  matches(): Customer[] {
+    const query = this.searchQuery.trim().toLowerCase();
+    if (!query) {
+      return this.searchSource;
+    }
+
+    return this.searchSource.filter((customer) => {
+      const nameMatch = customer.name.toLowerCase().includes(query);
+      const emailMatch = customer.email.toLowerCase().includes(query);
+      const phoneMatch = !!customer.phone && customer.phone.toLowerCase().includes(query);
+      const addressMatch = !!customer.address && customer.address.toLowerCase().includes(query);
+
+      return nameMatch || emailMatch || phoneMatch || addressMatch;
+    });
+  }
+
+  get filteredTotal(): number {
+    return this.isFiltering ? this.matches().length : this.total;
+  }
+
+  get filteredTotalPages(): number {
+    if (!this.isFiltering) {
+      return this.totalPages;
+    }
+    return Math.max(1, Math.ceil(this.filteredTotal / this.pageSize));
+  }
+
+  get activePage(): number {
+    return this.isFiltering ? this.searchPage : this.currentPage;
+  }
+
+  get filteredCustomers(): Customer[] {
+    if (!this.isFiltering) {
+      return this.customers;
+    }
+
+    const start = (this.searchPage - 1) * this.pageSize;
+    return this.matches().slice(start, start + this.pageSize);
+  }
+
+  get suggestions(): Customer[] {
+    if (!this.isFiltering) {
+      return [];
+    }
+
+    const uniqueCustomers = this.dedupe(this.matches());
+    return uniqueCustomers.slice(0, 8);
+  }
+
+  onSearchInput(query: string): void {
+    this.searchQuery = query;
+    this.searchPage = 1;
+    this.showSuggestions = true;
+    this.selectedSuggestionIndex = -1;
+  }
+
+  selectSuggestion(customer: Customer): void {
+    this.searchQuery = customer.name;
+    this.searchPage = 1;
+    this.showSuggestions = false;
+    this.selectedSuggestionIndex = -1;
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.searchPage = 1;
+    this.showSuggestions = false;
+    this.selectedSuggestionIndex = -1;
+  }
+
+  onSearchKeydown(event: KeyboardEvent): void {
+    const list = this.suggestions;
+    if (list.length === 0) {
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.selectedSuggestionIndex =
+        (this.selectedSuggestionIndex + 1) % list.length;
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.selectedSuggestionIndex =
+        this.selectedSuggestionIndex <= 0
+          ? list.length - 1
+          : this.selectedSuggestionIndex - 1;
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      const targetIndex = this.selectedSuggestionIndex >= 0 ? this.selectedSuggestionIndex : 0;
+      this.selectSuggestion(list[targetIndex]);
+    } else if (event.key === 'Escape') {
+      this.showSuggestions = false;
+    }
+  }
+
+  onBlurSuggestions(): void {
+    setTimeout(() => {
+      this.showSuggestions = false;
+      this.selectedSuggestionIndex = -1;
+    }, 150);
+  }
+
   goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages) {
+    if (page < 1 || page > this.filteredTotalPages || page === this.activePage) {
+      return;
+    }
+
+    if (this.isFiltering) {
+      this.searchPage = page;
       return;
     }
 
@@ -123,16 +272,16 @@ export class CustomersComponent implements OnInit, OnDestroy {
 
   // First visible item number (1-based)
   get startItem(): number {
-    if (this.total === 0) {
+    if (this.filteredTotal === 0) {
       return 0;
     }
 
-    return (this.currentPage - 1) * this.pageSize + 1;
+    return (this.activePage - 1) * this.pageSize + 1;
   }
 
   // Last visible item number (1-based)
   get endItem(): number {
-    return Math.min(this.currentPage * this.pageSize, this.total);
+    return Math.min(this.activePage * this.pageSize, this.filteredTotal);
   }
 
   initials(name: string): string {
@@ -191,6 +340,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
             : 'Customer created successfully.'
         );
         this.loadCustomers();
+        this.loadAllCustomers();
       },
       error: (error) => {
         this.isSaving = false;
@@ -211,6 +361,17 @@ export class CustomersComponent implements OnInit, OnDestroy {
     this.toastTimer = setTimeout(() => {
       this.toastMessage = null;
     }, 3500);
+  }
+
+  private dedupe(customers: Customer[]): Customer[] {
+    const seen = new Set<string>();
+    return customers.filter((customer) => {
+      if (seen.has(customer.id)) {
+        return false;
+      }
+      seen.add(customer.id);
+      return true;
+    });
   }
 
   ngOnDestroy(): void {

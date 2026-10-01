@@ -47,10 +47,38 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       return this.users;
     }
 
-    return this.users.filter((user) =>
-      user.username.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query)
+    const normalizedQuery = query.replace(/[_\s-]+/g, ' ');
+
+    return this.users.filter((user) => {
+      const username = (user.username || '').toLowerCase();
+      const email = (user.email || '').toLowerCase();
+      const roleRaw = (user.role || '').toLowerCase();
+      const roleNormalized = roleRaw.replace(/[_\s-]+/g, ' ');
+
+      return (
+        username.includes(query) ||
+        email.includes(query) ||
+        roleRaw.includes(query) ||
+        roleNormalized.includes(normalizedQuery)
+      );
+    });
+  }
+
+  getNormalizedRole(role: string | null | undefined): AppRole {
+    if (!role) {
+      return this.roleOptions[0];
+    }
+    const match = this.roleOptions.find(
+      (r) => r.toUpperCase() === role.trim().toUpperCase()
     );
+    return match || this.roleOptions[0];
+  }
+
+  isRoleSelected(userRole: string | null | undefined, optionRole: string): boolean {
+    if (!userRole) {
+      return false;
+    }
+    return userRole.trim().toUpperCase() === optionRole.trim().toUpperCase();
   }
 
   loadUsers(): void {
@@ -71,9 +99,10 @@ export class UserManagementComponent implements OnInit, OnDestroy {
           },
           error: (error) => {
             this.isLoading = false;
-            this.errorMessage =
-              error.error?.detail ||
-              'Failed to load users. The user service may not be available yet.';
+            this.errorMessage = this.formatError(
+              error,
+              'Failed to load users. The user service may not be available yet.'
+            );
           }
         })
     );
@@ -120,8 +149,9 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     return 'rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700';
   }
 
-  changeRole(user: User, role: AppRole): void {
-    if (role === user.role) {
+  changeRole(user: User, role: AppRole, event?: Event): void {
+    const currentRole = this.getNormalizedRole(user.role);
+    if (role === currentRole) {
       return;
     }
 
@@ -130,6 +160,9 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     );
 
     if (!confirmed) {
+      if (event?.target) {
+        (event.target as HTMLSelectElement).value = currentRole;
+      }
       return;
     }
 
@@ -157,9 +190,13 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.updatingId = null;
-        this.errorMessage =
-          error.error?.detail ||
-          'Failed to change role.';
+        if (event?.target) {
+          (event.target as HTMLSelectElement).value = currentRole;
+        }
+        this.errorMessage = this.formatError(
+          error,
+          'Failed to change role.'
+        );
       }
     }));
   }
@@ -177,6 +214,32 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     }
 
     return active.username.toLowerCase() === (user.username || '').toLowerCase();
+  }
+
+  private formatError(error: any, fallback: string): string {
+    const detail = error?.error?.detail;
+
+    if (typeof detail === 'string') {
+      return detail;
+    }
+
+    if (Array.isArray(detail)) {
+      return detail
+        .map((d: any) => {
+          if (d?.loc && d?.msg) {
+            const field = d.loc[d.loc.length - 1];
+            return field && field !== 'body' ? `${field}: ${d.msg}` : d.msg;
+          }
+          return d?.msg || JSON.stringify(d);
+        })
+        .join(', ');
+    }
+
+    if (detail && typeof detail === 'object') {
+      return detail.message || detail.msg || JSON.stringify(detail);
+    }
+
+    return error?.error?.message || error?.message || fallback;
   }
 
   ngOnDestroy(): void {

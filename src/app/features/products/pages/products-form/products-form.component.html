@@ -223,13 +223,13 @@
 
 
   <!-- Buttons -->
-  <div class="md:col-span-2 flex flex-col gap-3 sm:flex-row sm:justify-end">
+  <div class="md:col-span-2 flex flex-col gap-2.5 sm:flex-row sm:justify-end">
 
     <button
       type="button"
       (click)="cancel()"
       [disabled]="submitting"
-      class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-all duration-200 hover:bg-slate-50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+      class="rounded-lg sm:rounded-xl border border-slate-300 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-slate-700 transition-all duration-200 hover:bg-slate-50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
     >
       Cancel
     </button>
@@ -237,7 +237,7 @@
     <button
       type="submit"
       [disabled]="submitting"
-      class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+      class="rounded-lg sm:rounded-xl bg-blue-600 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {{ submitting ? 'Saving...' : (editMode ? 'Update Product' : 'Save Product') }}
     </button>

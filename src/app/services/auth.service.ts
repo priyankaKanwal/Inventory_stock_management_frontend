@@ -9,8 +9,6 @@ export interface LoginRequest {
   password: string;
 }
 
-// `role` stays a plain string here on purpose: it is whatever the backend sent
-// and is only narrowed to an AppRole by parseRole() inside startSession().
 export interface LoginResponse {
   access_token: string;
   role: string;

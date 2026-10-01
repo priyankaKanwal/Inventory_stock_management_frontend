@@ -17,8 +17,7 @@ export class LoginComponent {
   noticeMessage = '';
   isLoading = false;
 
-  // Set when the user is bounced here by the auth layer rather than by
-  // submitting the form themselves.
+
   private static readonly NOTICES: Record<string, string> = {
     'role-changed':
       'Your own role was changed. Please sign in again to apply it.',
@@ -56,10 +55,6 @@ export class LoginComponent {
 
       next: (response) => {
 
-        // The role comes from the backend and is accepted only if it is one
-        // of the known AppRole values; anything else writes nothing and fails
-        // the login. The access token is persisted because the HTTP
-        // interceptor needs it to survive a reload.
         const started = startSession(
           response.access_token,
           response.role,
@@ -76,7 +71,7 @@ export class LoginComponent {
 
         this.isLoading = false;
 
-        this.router.navigateByUrl(this.returnUrl());
+        this.router.navigate(['/dashboard']);
       },
 
       error: (error) => {
@@ -90,20 +85,7 @@ export class LoginComponent {
     });
   }
 
-  // Falls back to the dashboard when the guard did not record where the user
-  // was originally heading. Only same-origin paths are honoured so a crafted
-  // returnUrl cannot bounce the user to another site.
-  private returnUrl(): string {
-
-    const target = this.route.snapshot.queryParamMap.get('returnUrl');
-
-    if (!target || !target.startsWith('/') || target.startsWith('//')) {
-      return '/dashboard';
-    }
-
-    return target;
-  }
-
+ 
   logout(): void {
 
     clearSession();

@@ -75,7 +75,9 @@ export class PredictionsComponent implements OnInit, OnDestroy {
   loadOrders(): void {
     this.subscriptions.push(this.orderService.getAllOrders().subscribe({
       next: (orders) => {
-        this.orders = orders || [];
+        this.orders = (orders || []).filter(
+          (order) => order.status?.toUpperCase() !== 'DELIVERED' && !order.actual_delivery_date
+        );
       },
       error: () => {
         this.orders = [];
@@ -127,9 +129,10 @@ export class PredictionsComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.isLoading = false;
-          this.errorMessage =
-            error.error?.detail ||
-            'Failed to compute prediction for the selected order.';
+          this.errorMessage = this.formatError(
+            error,
+            'Failed to compute prediction for the selected order.'
+          );
         }
       })
     );
@@ -168,12 +171,20 @@ export class PredictionsComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.isLoading = false;
-          this.errorMessage =
-            error.error?.detail ||
-            'Failed to run the simulation.';
+          this.errorMessage = this.formatError(
+            error,
+            'Failed to run the simulation.'
+          );
         }
       })
     );
+  }
+
+  formatFulfillmentDays(days: number | null | undefined): string {
+    if (days === null || days === undefined || isNaN(Number(days))) {
+      return '—';
+    }
+    return Number(days).toFixed(3);
   }
 
   riskAssessment(): 'ON TIME' | 'DELAY RISK' {
@@ -213,6 +224,32 @@ export class PredictionsComponent implements OnInit, OnDestroy {
       month: 'short',
       day: 'numeric'
     });
+  }
+
+  private formatError(error: any, fallback: string): string {
+    const detail = error?.error?.detail;
+
+    if (typeof detail === 'string') {
+      return detail;
+    }
+
+    if (Array.isArray(detail)) {
+      return detail
+        .map((d: any) => {
+          if (d?.loc && d?.msg) {
+            const field = d.loc[d.loc.length - 1];
+            return field && field !== 'body' ? `${field}: ${d.msg}` : d.msg;
+          }
+          return d?.msg || JSON.stringify(d);
+        })
+        .join(', ');
+    }
+
+    if (detail && typeof detail === 'object') {
+      return detail.message || detail.msg || JSON.stringify(detail);
+    }
+
+    return error?.error?.message || error?.message || fallback;
   }
 
   ngOnDestroy(): void {

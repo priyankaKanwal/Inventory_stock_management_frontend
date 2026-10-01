@@ -215,13 +215,37 @@ export class TaskFormComponent implements OnInit {
         this.isSaving = false;
         this.saved.emit(task);
       },
-      error: (error) => {
+      error: (error: any) => {
         this.isSaving = false;
-        this.errorMessage =
-          error.error?.detail ||
-          'Failed to save task.';
+        this.errorMessage = this.formatError(error);
       }
     });
+  }
+
+  private formatError(error: any): string {
+    const detail = error?.error?.detail;
+
+    if (typeof detail === 'string') {
+      return detail;
+    }
+
+    if (Array.isArray(detail)) {
+      return detail
+        .map((d: any) => {
+          if (d?.loc && d?.msg) {
+            const field = d.loc[d.loc.length - 1];
+            return field && field !== 'body' ? `${field}: ${d.msg}` : d.msg;
+          }
+          return d?.msg || JSON.stringify(d);
+        })
+        .join(', ');
+    }
+
+    if (detail && typeof detail === 'object') {
+      return detail.message || detail.msg || JSON.stringify(detail);
+    }
+
+    return error?.error?.message || error?.message || 'Failed to save task.';
   }
 
   cancel(): void {

@@ -3,11 +3,13 @@ import { Router } from '@angular/router';
 import { ProductService } from '../../services/product.service';
 import { SupplierService } from '../../services/supplier.service';
 import { CategoryService } from '../../services/category.service';
+import { CustomerService } from '../../services/customers.service';
+import { OrderService } from '../../services/order.service';
 import { AppRole, currentRole } from '../../auth/utils/role-auth';
 import { currentUser } from '../../auth/utils/auth-state';
 
 export interface Suggestion {
-  type: 'product' | 'supplier' | 'category';
+  type: 'product' | 'supplier' | 'category' | 'customer' | 'order';
   id: string;
   name: string;
   sub: string;
@@ -25,6 +27,8 @@ export class TopbarComponent implements OnInit {
   products: { id: string; name: string; sku: string }[] = [];
   suppliers: { id: string; name: string; email: string }[] = [];
   categories: { id: string; name: string; description?: string }[] = [];
+  customers: { id: string; name: string; email: string; phone?: string | null }[] = [];
+  orders: { id: string; customerId: string; customerName?: string; status: string; totalAmount: string }[] = [];
 
   searchQuery = '';
   showSuggestions = false;
@@ -42,7 +46,9 @@ export class TopbarComponent implements OnInit {
     private router: Router,
     private productService: ProductService,
     private supplierService: SupplierService,
-    private categoryService: CategoryService
+    private categoryService: CategoryService,
+    private customerService: CustomerService,
+    private orderService: OrderService
   ) {}
 
   ngOnInit(): void {
@@ -59,7 +65,7 @@ export class TopbarComponent implements OnInit {
         );
       },
       error: (error) => {
-        console.error('Error loading products:', error);
+        console.error('Error loading products for topbar search:', error);
       }
     });
 
@@ -73,7 +79,7 @@ export class TopbarComponent implements OnInit {
         }));
       },
       error: (error) => {
-        console.error('Error loading suppliers:', error);
+        console.error('Error loading suppliers for topbar search:', error);
       }
     });
 
@@ -87,9 +93,48 @@ export class TopbarComponent implements OnInit {
         }));
       },
       error: (error) => {
-        console.error('Error loading categories:', error);
+        console.error('Error loading categories for topbar search:', error);
       }
     });
+
+    // Get customers
+    this.customerService.getAllCustomers().subscribe({
+      next: (customers) => {
+        this.customers = (customers || []).map((c) => ({
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          phone: c.phone
+        }));
+      },
+      error: (error) => {
+        console.error('Error loading customers for topbar search:', error);
+      }
+    });
+
+    // Get orders
+    this.orderService.getAllOrders().subscribe({
+      next: (orders) => {
+        this.orders = (orders || []).map((o) => ({
+          id: o.id,
+          customerId: o.customer_id,
+          customerName: o.customer_name || undefined,
+          status: o.status,
+          totalAmount: o.total_amount
+        }));
+      },
+      error: (error) => {
+        console.error('Error loading orders for topbar search:', error);
+      }
+    });
+  }
+
+  private getCustomerName(customerId: string, fallback?: string): string {
+    if (fallback) {
+      return fallback;
+    }
+    const found = this.customers.find((c) => c.id === customerId);
+    return found ? found.name : '';
   }
 
   get suggestions(): Suggestion[] {
@@ -148,10 +193,48 @@ export class TopbarComponent implements OnInit {
         });
       });
 
+    this.customers
+      .filter(
+        (c) =>
+          c.name.toLowerCase().includes(query) ||
+          c.email.toLowerCase().includes(query) ||
+          (c.phone ? c.phone.toLowerCase().includes(query) : false)
+      )
+      .forEach((c) => {
+        result.push({
+          type: 'customer',
+          id: c.id,
+          name: c.name,
+          sub: c.email || c.phone || 'Customer'
+        });
+      });
+
+    this.orders
+      .filter((o) => {
+        const custName = this.getCustomerName(o.customerId, o.customerName).toLowerCase();
+        const shortId = o.id.length > 8 ? o.id.slice(0, 8).toLowerCase() : o.id.toLowerCase();
+        return (
+          o.id.toLowerCase().includes(query) ||
+          shortId.includes(query) ||
+          custName.includes(query) ||
+          o.status.toLowerCase().includes(query)
+        );
+      })
+      .forEach((o) => {
+        const custName = this.getCustomerName(o.customerId, o.customerName);
+        const shortId = o.id.length > 8 ? o.id.slice(0, 8) : o.id;
+        result.push({
+          type: 'order',
+          id: o.id,
+          name: `Order #${shortId}`,
+          sub: (custName ? `${custName} • ` : '') + o.status
+        });
+      });
+
     return this.dedupe(result).slice(0, 8);
   }
 
-  //global Search
+  // Global search
   onSearchInput(query: string): void {
     this.searchQuery = query;
     this.showSuggestions = true;
@@ -161,6 +244,21 @@ export class TopbarComponent implements OnInit {
   selectSuggestion(suggestion: Suggestion): void {
     this.searchQuery = suggestion.name;
     this.showSuggestions = false;
+
+    if (suggestion.type === 'customer') {
+      this.router.navigate(['/customers'], {
+        queryParams: { search: suggestion.name }
+      });
+      return;
+    }
+
+    if (suggestion.type === 'order') {
+      const shortId = suggestion.id.length > 8 ? suggestion.id.slice(0, 8) : suggestion.id;
+      this.router.navigate(['/orders'], {
+        queryParams: { search: shortId }
+      });
+      return;
+    }
 
     const route =
       suggestion.type === 'product'
@@ -193,12 +291,10 @@ export class TopbarComponent implements OnInit {
           ? list.length - 1
           : this.selectedSuggestionIndex - 1;
 
-    } else if (
-      event.key === 'Enter' &&
-      this.selectedSuggestionIndex >= 0
-    ) {
+    } else if (event.key === 'Enter') {
       event.preventDefault();
-      this.selectSuggestion(list[this.selectedSuggestionIndex]);
+      const targetIndex = this.selectedSuggestionIndex >= 0 ? this.selectedSuggestionIndex : 0;
+      this.selectSuggestion(list[targetIndex]);
 
     } else if (event.key === 'Escape') {
       this.showSuggestions = false;
@@ -230,4 +326,4 @@ export class TopbarComponent implements OnInit {
       return true;
     });
   }
-}
+}

@@ -100,9 +100,10 @@ export class ManageTasksComponent implements OnInit, OnDestroy {
           },
           error: (error) => {
             this.isLoading = false;
-            this.errorMessage =
-              error.error?.detail ||
-              'Failed to load tasks. The task service may not be available yet.';
+            this.errorMessage = this.formatError(
+              error,
+              'Failed to load tasks. The task service may not be available yet.'
+            );
           }
         })
     );
@@ -230,11 +231,35 @@ export class ManageTasksComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.deletingId = null;
-        this.errorMessage =
-          error.error?.detail ||
-          'Failed to delete task.';
+        this.errorMessage = this.formatError(error, 'Failed to delete task.');
       }
     }));
+  }
+
+  private formatError(error: any, fallback: string): string {
+    const detail = error?.error?.detail;
+
+    if (typeof detail === 'string') {
+      return detail;
+    }
+
+    if (Array.isArray(detail)) {
+      return detail
+        .map((d: any) => {
+          if (d?.loc && d?.msg) {
+            const field = d.loc[d.loc.length - 1];
+            return field && field !== 'body' ? `${field}: ${d.msg}` : d.msg;
+          }
+          return d?.msg || JSON.stringify(d);
+        })
+        .join(', ');
+    }
+
+    if (detail && typeof detail === 'object') {
+      return detail.message || detail.msg || JSON.stringify(detail);
+    }
+
+    return error?.error?.message || error?.message || fallback;
   }
 
   ngOnDestroy(): void {

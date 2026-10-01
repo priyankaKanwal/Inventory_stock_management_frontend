@@ -5,7 +5,7 @@ import { DashboardService } from '../../services/dashboard.service';
 import { ProductService, Product, ProductsResponse } from '../../services/product.service';
 import { TaskService, Task } from '../../services/task.service';
 import { OrderService, Order } from '../../services/order.service';
-import { canViewOrders, canViewProducts, isSuperAdmin } from '../../auth/utils/role-auth';
+import { canViewOrders, canViewProducts, isOrderStaff, isSuperAdmin } from '../../auth/utils/role-auth';
 
 export interface DashboardSummary {
   total_products: number;
@@ -50,6 +50,10 @@ export class DashboardComponent implements OnInit {
   // Tasks are assigned to workers, so a super admin has nothing pending.
   get canViewTasksSection(): boolean {
     return !isSuperAdmin();
+  }
+
+  get isOrderStaff(): boolean {
+    return isOrderStaff();
   }
 
   get activeStockProducts(): Product[] {
@@ -180,7 +184,7 @@ export class DashboardComponent implements OnInit {
   }
 
   stockTabClass(tab: 'low' | 'out'): string {
-    const base = 'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-150';
+    const base = 'rounded-lg px-2.5 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm font-medium transition-colors duration-150';
 
     return this.stockAlertsTab === tab
       ? `${base} bg-white text-slate-900 shadow-sm`

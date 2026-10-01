@@ -1,8 +1,8 @@
-<main class="mx-auto flex h-full max-w-6xl flex-col gap-4 px-6 py-4">
-  <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+<main class="mx-auto flex h-full max-w-6xl flex-col gap-2.5 sm:gap-4 px-2 sm:px-6 py-2.5 sm:py-4">
+  <div class="flex items-center justify-between gap-2">
     <div>
-      <h1 class="text-2xl font-semibold text-slate-900">Manage Tasks</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-lg sm:text-2xl font-semibold text-slate-900">Manage Tasks</h1>
+      <p class="mt-0.5 text-xs sm:text-sm text-slate-500 hidden sm:block">
         {{ isSuper ? 'All tasks in the system' : 'Tasks you assigned to your team' }}
       </p>
     </div>
@@ -10,7 +10,7 @@
     <button
       type="button"
       (click)="openCreate()"
-      class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      class="inline-flex shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-blue-600 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
     >
       + Assign Task
     </button>
@@ -34,15 +34,16 @@
 
   <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <div class="border-b border-slate-200 px-4 py-3 sm:px-6">
-      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h2 class="text-lg font-semibold text-slate-900">Assigned Tasks</h2>
+      <div class="flex flex-col gap-2.5 sm:gap-3 md:flex-row md:items-center md:justify-between">
+        <h2 class="text-base sm:text-lg font-semibold text-slate-900">Assigned Tasks</h2>
 
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <!-- Status and All Assignee in ONE line -->
+        <div class="flex items-center gap-2">
           <select
             [value]="filterStatus"
             (change)="filterStatus = $any($event.target).value"
             aria-label="Filter by status"
-            class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+            class="min-w-0 flex-1 sm:w-auto sm:flex-initial rounded-xl border border-slate-300 bg-slate-50 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
           >
             <option value="">All Status</option>
             <option value="PENDING">Pending</option>
@@ -54,7 +55,7 @@
             [value]="filterAssignee"
             (change)="filterAssignee = $any($event.target).value"
             aria-label="Filter by assignee"
-            class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+            class="min-w-0 flex-1 sm:w-auto sm:flex-initial rounded-xl border border-slate-300 bg-slate-50 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
           >
             <option value="">All assignees</option>
             <option *ngFor="let member of assignees" [value]="member.id">{{ member.username }}</option>
@@ -76,8 +77,53 @@
       No tasks found.
     </div>
 
+    <!-- Mobile Card View -->
+    <div *ngIf="!isLoading && filteredTasks.length > 0" class="min-h-0 flex-1 overflow-y-auto md:hidden scrollbar-thin p-3 space-y-3">
+      <div *ngFor="let task of filteredTasks"
+        class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm transition-all duration-200 hover:shadow-md hover:border-slate-300">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <h3 class="font-semibold text-slate-900 text-sm leading-snug">{{ task.title }}</h3>
+            <p class="mt-0.5 text-xs text-slate-500">
+              <span class="text-slate-400">To:</span> <strong class="font-medium text-slate-700">{{ assigneeName(task) }}</strong>
+              <span *ngIf="isSuper" class="ml-1.5"><span class="text-slate-400">By:</span> {{ assignerName(task) }}</span>
+            </p>
+          </div>
+          <span [ngClass]="priorityClass(task.priority)" class="shrink-0 text-xs">{{ task.priority }}</span>
+        </div>
+
+        <div class="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
+          <span [ngClass]="statusClass(task.status)">{{ statusLabel(task.status) }}</span>
+          <span *ngIf="task.target_type" class="rounded-md bg-slate-100 px-2 py-0.5 text-slate-600 font-medium">
+            {{ targetLabel(task.target_type) }}
+          </span>
+          <span class="text-slate-400 ml-auto">
+            Due: {{ task.due_date ? (task.due_date | date:'mediumDate') : '—' }}
+          </span>
+        </div>
+
+        <div class="mt-2.5 flex items-center justify-end gap-1.5 border-t border-slate-100 pt-2.5">
+          <button
+            type="button"
+            (click)="openEdit(task)"
+            class="flex-1 rounded-lg border border-slate-300 px-2.5 py-1 text-center text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            (click)="deleteTask(task)"
+            [disabled]="deletingId === task.id"
+            class="flex-1 rounded-lg border border-red-200 px-2.5 py-1 text-center text-xs font-medium text-red-600 hover:bg-red-50 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {{ deletingId === task.id ? 'Deleting…' : 'Delete' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Desktop table -->
-    <div *ngIf="!isLoading && filteredTasks.length > 0" class="min-h-0 flex-1 overflow-x-auto">
+    <div *ngIf="!isLoading && filteredTasks.length > 0" class="hidden min-h-0 flex-1 overflow-x-auto md:block">
       <table class="min-w-full divide-y divide-slate-200 text-center">
         <thead class="bg-slate-50 text-sm text-slate-600">
           <tr>
@@ -107,11 +153,11 @@
               {{ targetLabel(task.target_type) }}
             </td>
             <td class="px-4 py-3">
-              <div class="flex justify-end gap-2">
+              <div class="flex justify-end gap-1.5 sm:gap-2">
                 <button
                   type="button"
                   (click)="openEdit(task)"
-                  class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150"
+                  class="rounded-lg border border-slate-300 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150"
                 >
                   Edit
                 </button>
@@ -119,7 +165,7 @@
                   type="button"
                   (click)="deleteTask(task)"
                   [disabled]="deletingId === task.id"
-                  class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
+                  class="rounded-lg border border-red-200 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {{ deletingId === task.id ? 'Deleting…' : 'Delete' }}
                 </button>
@@ -148,12 +194,12 @@
             type="button"
             (click)="goToPage(currentPage - 1)"
             [disabled]="currentPage <= 1"
-            class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            class="rounded-lg border border-slate-300 px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Previous
           </button>
 
-          <span class="px-2 text-sm text-slate-500">
+          <span class="px-1.5 sm:px-2 text-xs sm:text-sm text-slate-500">
             Page
             <span class="font-medium text-slate-500">{{ currentPage }}</span>
             of
@@ -164,7 +210,7 @@
             type="button"
             (click)="goToPage(currentPage + 1)"
             [disabled]="currentPage >= totalPages"
-            class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            class="rounded-lg border border-slate-300 px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next
           </button>

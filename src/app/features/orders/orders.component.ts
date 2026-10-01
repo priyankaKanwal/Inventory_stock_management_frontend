@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormArray, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import {
@@ -37,9 +38,14 @@ const NEXT_ORDER_STATUSES: Record<OrderStatus, OrderStatus[]> = {
 export class OrdersComponent implements OnInit, OnDestroy {
 
   orders: Order[] = [];
+  allOrders: Order[] = [];
   customers: Customer[] = [];
   products: Product[] = [];
   myTasks: Task[] = [];
+
+  // Search state
+  searchQuery = '';
+  searchPage = 1;
 
   // Pagination state
   currentPage = 1;
@@ -90,20 +96,33 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   private customerNames = new Map<string, string>();
   private productNames = new Map<string, string>();
+  private productMap = new Map<string, Product>();
 
   constructor(
     private fb: FormBuilder,
     private orderService: OrderService,
     private customerService: CustomerService,
     private productService: ProductService,
-    private taskService: TaskService
+    private taskService: TaskService,
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit(): void {
     this.loadMyTasks();
     this.loadOrders();
+    this.loadAllOrders();
     this.loadCustomers();
     this.loadProducts();
+
+    this.subscriptions.push(
+      this.route.queryParamMap.subscribe((params) => {
+        const search = params.get('search');
+        if (search !== null) {
+          this.searchQuery = search;
+          this.searchPage = 1;
+        }
+      })
+    );
   }
 
   loadMyTasks(): void {
@@ -170,22 +189,96 @@ export class OrdersComponent implements OnInit, OnDestroy {
     );
   }
 
+  loadAllOrders(): void {
+    this.subscriptions.push(
+      this.orderService.getAllOrders().subscribe({
+        next: (orders) => {
+          this.allOrders = orders || [];
+        },
+        error: () => {
+          this.allOrders = [];
+        }
+      })
+    );
+  }
+
+  get isFiltering(): boolean {
+    return this.searchQuery.trim().length > 0;
+  }
+
+  private get searchSource(): Order[] {
+    return this.allOrders.length ? this.allOrders : this.orders;
+  }
+
+  matches(): Order[] {
+    const query = this.searchQuery.trim().toLowerCase();
+    if (!query) {
+      return this.searchSource;
+    }
+
+    return this.searchSource.filter((order) => {
+      const custName = this.customerName(order.customer_id).toLowerCase();
+      const shortId = this.shortId(order.id).toLowerCase();
+      const statusMatches = order.status.toLowerCase().includes(query);
+
+      return (
+        order.id.toLowerCase().includes(query) ||
+        shortId.includes(query) ||
+        custName.includes(query) ||
+        statusMatches
+      );
+    });
+  }
+
+  get filteredTotal(): number {
+    return this.isFiltering ? this.matches().length : this.total;
+  }
+
+  get filteredTotalPages(): number {
+    if (!this.isFiltering) {
+      return this.totalPages;
+    }
+    return Math.max(1, Math.ceil(this.filteredTotal / this.pageSize));
+  }
+
+  get activePage(): number {
+    return this.isFiltering ? this.searchPage : this.currentPage;
+  }
+
+  get displayedOrders(): Order[] {
+    if (!this.isFiltering) {
+      return this.orders;
+    }
+    const start = (this.searchPage - 1) * this.pageSize;
+    return this.matches().slice(start, start + this.pageSize);
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.searchPage = 1;
+  }
+
   // First visible item number (1-based)
   get startItem(): number {
-    if (this.total === 0) {
+    if (this.filteredTotal === 0) {
       return 0;
     }
 
-    return (this.currentPage - 1) * this.pageSize + 1;
+    return (this.activePage - 1) * this.pageSize + 1;
   }
 
   // Last visible item number (1-based)
   get endItem(): number {
-    return Math.min(this.currentPage * this.pageSize, this.total);
+    return Math.min(this.activePage * this.pageSize, this.filteredTotal);
   }
 
   goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages) {
+    if (page < 1 || page > this.filteredTotalPages || page === this.activePage) {
+      return;
+    }
+
+    if (this.isFiltering) {
+      this.searchPage = page;
       return;
     }
 
@@ -215,9 +308,11 @@ export class OrdersComponent implements OnInit, OnDestroy {
           this.products = response.items || [];
           this.productsLoadError = '';
           this.productNames.clear();
+          this.productMap.clear();
           this.products.forEach((p) => {
             this.productNames.set(p.id, p.name);
             p.quantity_in_stock = p.quantity_in_stock ?? 0;
+            this.productMap.set(p.id, p);
           });
         },
         error: () => {
@@ -226,6 +321,81 @@ export class OrdersComponent implements OnInit, OnDestroy {
         }
       })
     );
+  }
+
+  getProduct(productId: string): Product | undefined {
+    return this.productMap.get(productId);
+  }
+
+  getProductStockQty(productId: string): number | string {
+    const product = this.productMap.get(productId);
+    if (!product) {
+      return '—';
+    }
+    return product.quantity_in_stock ?? 0;
+  }
+
+  productStockStatusLabel(productId: string): string {
+    const product = this.productMap.get(productId);
+    if (!product) {
+      return 'Unknown';
+    }
+
+    const qty = product.quantity_in_stock ?? 0;
+    const reorder = product.reorder_level ?? 0;
+
+    if (qty <= 0) {
+      return 'Out of Stock';
+    }
+    if (qty <= reorder) {
+      return 'Less in Stock';
+    }
+
+    if (product.stock_status) {
+      const s = product.stock_status.toLowerCase();
+      if (s === 'out of stock' || s === 'out_of_stock') {
+        return 'Out of Stock';
+      }
+      if (s === 'low stock' || s === 'low_stock') {
+        return 'Less in Stock';
+      }
+    }
+
+    return 'In Stock';
+  }
+
+  productStockQtyText(productId: string): string {
+    const product = this.productMap.get(productId);
+    if (!product) {
+      return 'Stock unknown';
+    }
+    const qty = product.quantity_in_stock ?? 0;
+    return `${qty} in stock`;
+  }
+
+  productStockClass(productId: string): string {
+    const status = this.productStockStatusLabel(productId);
+    const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium';
+
+    switch (status) {
+      case 'In Stock':
+        return `${base} bg-emerald-100 text-emerald-700`;
+      case 'Less in Stock':
+        return `${base} bg-amber-100 text-amber-700`;
+      case 'Out of Stock':
+        return `${base} bg-rose-100 text-rose-700`;
+      default:
+        return `${base} bg-slate-100 text-slate-600`;
+    }
+  }
+
+  isShortage(item: any): boolean {
+    const product = this.productMap.get(item?.product_id);
+    if (!product) {
+      return false;
+    }
+    const available = product.quantity_in_stock ?? 0;
+    return (item?.quantity ?? 0) > available;
   }
 
   // Single message covering whichever reference list failed, for the modal banner.
@@ -402,6 +572,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
   openDetails(order: Order): void {
     this.selectedOrder = order;
     this.showDetailsModal = true;
+    this.loadProducts();
   }
 
   openStatus(order: Order): void {
