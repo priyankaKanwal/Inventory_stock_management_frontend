@@ -1,122 +1,148 @@
-# Inventory Stock Management
+# Inventory & Stock Management System - Frontend
 
-Frontend-only inventory and stock management application built with Angular 17, TypeScript, RxJS, and Tailwind CSS.
+Modern, high-performance web client for enterprise inventory management, order processing, manager-to-staff task delegation (ABAC), and Machine Learning delivery time forecasting.
 
-The application is organized into lazy-loaded feature modules for the dashboard, products, categories, and suppliers. Product workflows include reactive-form validation, stock adjustment, search, filters, pagination, and stock-status alerts.
+Built with **Angular 17**, **TypeScript**, **RxJS**, and **Tailwind CSS**.
 
-## Current Data Source
+---
 
-The frontend talks to a real HTTP API (Django-style backend) at `http://127.0.0.1:8000`. The API host is configurable in `src/environments/environment.development.ts` and the backend must be running for data to load. All requests are made through the services in `core/services/`, which act as the single integration boundary with the backend. If the API is unreachable, the dashboard shows a clear "unable to reach the inventory API" message instead of failing silently.
+## 🌟 Key Capabilities
 
-## Prerequisites
+- **🔐 Enterprise Authentication & Dual RBAC/ABAC Security**:
+  - 5 Granular Roles: `SUPER_ADMIN`, `INVENTORY_MANAGER`, `ORDER_MANAGER`, `INVENTORY_STAFF`, `ORDER_STAFF`.
+  - Route-level security with `roleGuard`.
+  - Attribute-Based Access Control (ABAC): Staff action buttons (Add Product, Add Category, Add Supplier, Add Customer, Create Order) dynamically unlock only when the user holds an active delegated task with matching scope.
+- **📊 Real-Time Analytics Dashboard**:
+  - Live inventory valuation metrics, total SKUs, low-stock warnings, and out-of-stock critical alerts.
+- **📦 Inventory & Stock Operations**:
+  - Product catalog with live search, category/supplier filters, and pagination.
+  - Interactive Stock In / Stock Out adjustment modal with audit logging.
+  - Category and Supplier management with soft-delete workflows.
+- **🛒 Sales Orders & State Machine Tracking**:
+  - Multi-line item order placement with dynamic pricing and inventory deficit detection (`AWAITING_STOCK`).
+  - Interactive order status progression (`CONFIRMED` → `PROCESSING` → `PACKED` → `SHIPPED` → `OUT_FOR_DELIVERY` → `DELIVERED`).
+- **🤖 AI / ML Delivery Time Prediction (XGBoost)**:
+  - Integrated one-click delivery date estimation on orders.
+  - Leverages 9 database-driven parameters (shortage, supplier lead time, warehouse handling, and courier transit) to forecast exact fulfillment turnaround days.
+- **📋 Domain-Scoped Task Delegation**:
+  - `INVENTORY_MANAGER` manages `INVENTORY_STAFF` (Scopes: `PRODUCT`, `CATEGORY`, `SUPPLIER`, `NONE`).
+  - `ORDER_MANAGER` manages `ORDER_STAFF` (Scopes: `CUSTOMER`, `ORDER`, `NONE`).
+  - Dedicated "My Tasks" interface for staff with status updates and deep-linking to target resources.
 
-Install the following before setup:
+---
 
-- Node.js 18.13 or newer
-- npm 9 or newer
-- A modern browser
-- Google Chrome is required for the default Karma unit-test launcher
+## 🛠️ Tech Stack
 
-Check your installed versions:
+| Technology | Purpose |
+|---|---|
+| **Angular 17** | Modern component-based SPA framework |
+| **TypeScript** | Type-safe enterprise JavaScript |
+| **Tailwind CSS** | Utility-first responsive CSS styling |
+| **RxJS** | Reactive state streams & asynchronous event handling |
+| **Angular Forms** | Reactive Forms with validation for complex mutations |
+| **Angular Router** | Lazy-loaded feature routing with route guards |
 
+---
+
+## ⚙️ Quick Start & Setup
+
+### 1. Prerequisites
+- **Node.js**: `18.13.0` or higher
+- **npm**: `9.0.0` or higher
+- **FastAPI Backend**: Running at `http://127.0.0.1:8000`
+
+### 2. Installation
 ```bash
-node --version
-npm --version
+# Navigate to the frontend directory
+cd Inventory_stock_management_frontend
+
+# Install dependencies
+npm install
 ```
 
-## Installation and Setup
+### 3. Start Development Server
+```bash
+npm start
+```
+Open your browser and navigate to `http://localhost:4200/`. The app will automatically reload if you change any source files.
 
-1. Clone the repository and open the project directory:
+---
 
-	```bash
-	git clone <repository-url>
-	cd inventory_stock_management
-	```
-
-2. Install the project dependencies:
-
-	```bash
-	npm install
-	```
-
-3. Confirm Tailwind CSS is available through the installed dependencies. Tailwind is configured in `tailwind.config.js`, and global directives are loaded from `src/styles.css`.
-
-4. Start the development server:
-
-	```bash
-	npm start
-	```
-
-5. Open `http://localhost:4200/` in a browser. The default route redirects to the dashboard.
-
-The development server reloads automatically when source files change.
-
-## Available Commands
+## 🚀 Available NPM Scripts
 
 | Command | Description |
-| --- | --- |
-| `npm start` | Start the development server at `http://localhost:4200/` |
-| `npm run build` | Create a production build in `dist/` |
-| `npm run watch` | Rebuild continuously using the development configuration |
-| `npm test` | Run Angular unit tests with Karma |
-| `npx ng generate component <name>` | Generate an Angular component |
-| `npx ng generate module <name>` | Generate an Angular NgModule |
+|---|---|
+| `npm start` | Runs the local development server at `http://localhost:4200/` |
+| `npm run build` | Compiles production bundle into `dist/` |
+| `npm run watch` | Builds and watches for changes |
+| `npm test` | Runs unit tests via Karma and ChromeHeadless |
 
-For Angular CLI commands, use workspace-relative paths without a leading slash. For example:
+---
 
-```bash
-npx ng generate module core/state
-```
+## 🧭 Application Routes
 
-## Application Routes
+| Path | Access Level | Description |
+|---|---|---|
+| `/login` | Public | User sign-in with email & password |
+| `/register` | Public | New user registration |
+| `/dashboard` | All Authenticated | Executive KPIs and stock alerts |
+| `/products` | Admins, Inv Managers, Inv Staff, Order Managers | Product catalog & stock adjustments |
+| `/categories` | Admins, Inv Managers, Inv Staff | Category management |
+| `/suppliers` | Admins, Inv Managers, Inv Staff | Supplier directory |
+| `/customers` | Admins, Order Managers, Order Staff | Customer records & profiles |
+| `/orders` | Admins, Order Managers, Order Staff, Inv Managers | Order placement & state machine |
+| `/predictions` | Admins, Order Managers, Order Staff, Inv Managers | ML delivery ETA predictions |
+| `/tasks/manage` | Admins, Inv Managers, Order Managers | Assign scoped tasks to staff |
+| `/tasks/my-tasks`| All Staff & Managers | Staff task duty board & status updates |
+| `/admin/users` | Super Admin Only | User role promotion & team inspection |
 
-- `/dashboard` - Inventory summary and stock alerts
-- `/products` - Product list, search, filters, pagination, and actions
-- `/products/new` - Add a product
-- `/products/:id/edit` - Edit a product
-- `/categories` - Category management
-- `/suppliers` - Supplier management
+---
 
-## Project Structure
+## 📁 Project Structure
 
 ```text
-src/app/
-├── core/       # Singleton services: API base URL, auth, product/category/supplier/dashboard
-├── auth/       # Login/signup pages and the route guard
-├── layout/     # Application shell: layout wrapper, sidebar, and topbar global search
-└── features/   # Lazy-loaded feature modules: dashboard, products, categories, suppliers
+src/
+├── app/
+│   ├── auth/                       # Authentication, guards, and RBAC utilities
+│   │   ├── guards/                 # role.guard.ts, auth.guard.ts
+│   │   ├── pages/                  # login & register pages
+│   │   └── utils/                  # role-auth.ts, auth-state.ts
+│   │
+│   ├── layout/                     # App shell (Sidebar, Topbar, Layout wrapper)
+│   │
+│   ├── features/                   # Lazy-loaded feature modules
+│   │   ├── dashboard/              # Analytics dashboard
+│   │   ├── products/               # Product list, filters, stock modals
+│   │   ├── categories/             # Category management
+│   │   ├── suppliers/              # Supplier management
+│   │   ├── customers/              # Customer records (ABAC-gated)
+│   │   ├── orders/                 # Order creation & state progression
+│   │   ├── predictions/            # ML ETA delivery prediction
+│   │   ├── tasks/                  # Task assignment & My Tasks
+│   │   └── users/                  # Super Admin user administration
+│   │
+│   ├── services/                   # Injectable Angular HTTP services
+│   │   ├── api.service.ts          # Core HTTP client with JWT interceptor
+│   │   ├── auth.service.ts         # Login/register/logout
+│   │   ├── task.service.ts         # Task assignment & ABAC helpers
+│   │   ├── order.service.ts        # Order CRUD & status transitions
+│   │   ├── prediction.service.ts   # ML delivery predictions
+│   │   └── product.service.ts      # Product & stock updates
+│   │
+│   ├── app.module.ts               # Root module
+│   └── app-routing.module.ts       # Top-level routing
+│
+├── environments/                   # Environment configurations
+│   ├── environment.ts              # Production environment
+│   └── environment.development.ts  # Development API URL (http://127.0.0.1:8000)
+│
+├── styles.css                      # Global Tailwind CSS imports & animations
+└── tailwind.config.js              # Tailwind theme configuration
 ```
 
-See [docs/Plan.md](docs/Plan.md) for the complete frontend implementation plan.
+---
 
-## API Requirements
+## 📖 In-Depth Documentation
 
-The app expects the following REST endpoints (relative to the base URL in `environment.development.ts`):
-
-| Endpoint | Methods | Purpose |
-| --- | --- | --- |
-| `/api/v1/products/` | GET, POST, DELETE | List and manage products |
-| `/api/v1/products/summary/` | GET | Dashboard summary counts and stock value |
-| `/api/v1/categories/` | GET, POST, PUT, DELETE | List and manage categories |
-| `/api/v1/suppliers/` | GET, POST, PUT, DELETE | List and manage suppliers |
-
-Data contracts: the products list response is wrapped in an `{ "items": [...] }` object, and `unit_price` is sent as a string (coerced to a number in `product.service.ts`). The dashboard `total_stock_value` is returned as pre-formatted currency.
-
-## Testing Notes
-
-Unit tests use Angular, Jasmine, Karma, and ChromeHeadless. If Chrome is installed in a non-default location, set the `CHROME_BIN` environment variable before running tests.
-
-```powershell
-$env:CHROME_BIN = "C:\Path\To\chrome.exe"
-npm test -- --watch=false --browsers=ChromeHeadless
-```
-
-## Build Verification
-
-Run the production build before committing changes:
-
-```bash
-npm run build
-```
-
-The build output is generated in `dist/inventory_stock_management/` and should not be edited manually.
+For complete architectural details, component interactions, ABAC security logic, and full API data contracts, refer to:
+👉 **[FRONTEND_DOCUMENTATION.md](file:///c:/Users/Ishika/Desktop/inv-mgmt/Inventory_stock_management_frontend/FRONTEND_DOCUMENTATION.md)**
